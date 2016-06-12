@@ -25,7 +25,7 @@ private:
 	Node* _goal;
 	Node* _topLeft;
 	
-	float CalcDist(float x1, float x2, float y1, float y2);
+	float CalcDist(float x1, float x2, float y1, float y2, bool useManhattan);
 
 public:
 	Map(int resolution);
@@ -82,8 +82,8 @@ Map::Map(int resolution) : _resolution(resolution) {
 			
 			float x = nodeWidth * j + nodeWidth / 2;
 			float y = nodeWidth * (_resolution - i - 1) + nodeWidth / 2;
-			float distToStart = CalcDist(x, START_X, y, START_Y);
-			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y);
+			float distToStart = CalcDist(x, START_X, y, START_Y, false);
+			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y, false);
 			node->SetHeuristic(distToGoal); // calculated above, might as well use it
 
 			// find the start node
@@ -111,12 +111,14 @@ Map::Map(int resolution) : _resolution(resolution) {
 			// circular obstacle at (x = 40, y = 60, r = 10)
 			if (powf(x - 40, 2) + powf(y - 60, 2) < 100) node->SetOccupied(true);
 
-			// circular obstacle at (x = 80, y = 50, r = 10)
-			if (powf(x - 80, 2) + powf(y - 50, 2) < 100) node->SetOccupied(true);
+			// circular obstacle at (x = 83, y = 50, r = 10)
+			if (powf(x - 83, 2) + powf(y - 50, 2) < 100) node->SetOccupied(true);
 
-			// circular obstacle at (x = 70, y = 70, r = 6)
-			if (powf(x - 70, 2) + powf(y - 70, 2) <= 36) node->SetOccupied(true);
+			// circular obstacle at (x = 75, y = 65, r = 10)
+			if (powf(x - 75, 2) + powf(y - 65, 2) <= 100) node->SetOccupied(true);
 
+			// circular obstacle at (x = 65, y = 82, r = 11)
+			if (powf(x - 65, 2) + powf(y - 82, 2) <= 121) node->SetOccupied(true);
 		}
 	}
 	_topLeft = map2d[0][0];
@@ -187,7 +189,9 @@ void Map::Print() {
 	}
 }
 
-float Map::CalcDist(float x1, float x2, float y1, float y2) {
-	return sqrtf(powf(x1 - x2, 2) + powf(y1 - y2, 2));
+float Map::CalcDist(float x1, float x2, float y1, float y2, bool useManhattan) {
+	if (useManhattan)
+		return sqrtf(powf(x1 - x2, 2) + powf(y1 - y2, 2));
+	return fabs(x1 - x2) + fabs(y1 - y2);
 }
 #endif

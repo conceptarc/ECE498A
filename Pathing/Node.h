@@ -10,6 +10,7 @@ class Node {
 private:
 	int _id;
 	bool _isPath;
+	bool _isVisited;
 	bool _isOccupied;
 	bool _isStart;
 	bool _isGoal;
@@ -25,6 +26,7 @@ public:
 	// accessors
 	int GetID();
 	bool IsPath();
+	bool IsVisited();
 	bool IsOccupied();
 	bool IsStart();
 	bool IsGoal();
@@ -39,6 +41,7 @@ public:
 	// mutators
 	void SetID(int id);
 	void SetPath(bool isPath);
+	void SetVisited(bool isVisited);
 	void SetOccupied(bool isOccupied);
 	void SetStart(bool isStart);
 	void SetGoal(bool isGoal);
@@ -63,6 +66,10 @@ bool Node::IsPath() {
 	return _isPath;
 }
 
+bool Node::IsVisited() {
+	return _isVisited;
+}
+
 bool Node::IsOccupied() {
 	return _isOccupied;
 }
@@ -76,8 +83,7 @@ bool Node::IsGoal() {
 }
 
 float Node::GetHeuristicDist() {
-	// ensure admissibility using floor
-	return floorf(_heuristicDist);
+	return _heuristicDist;
 }
 
 Node* Node::GetNorth() {
@@ -110,6 +116,7 @@ char Node::Print() {
 	if (_isGoal) return 'G';
 	if (_isStart) return 'S';
 	if (_isPath) return '.';
+	if (_isVisited) return 'o';
 	return ' ';
 }
 
@@ -119,6 +126,10 @@ void Node::SetID(int id) {
 
 void Node::SetPath(bool isPath) {
 	_isPath = isPath;
+}
+
+void Node::SetVisited(bool isVisited) {
+	_isVisited = isVisited;
 }
 
 void Node::SetOccupied(bool isOccupied) {

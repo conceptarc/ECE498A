@@ -8,13 +8,18 @@
 int main() {
 
 	char end;
+	int res = 15;
+	Map* test = new Map(res);
 
-	Map* test = new Map(40);
-	//test->Print();
-	//cin >> end;
 	A_Star::FindPath(test);
+	//test->Print();
 	delete test;
 
+	//test = new Map(res);
+	//A_Star::FindPath(test, false);
+	//test->Print();
+
+	//delete test;
 	cin >> end;
 	return 0;
 }

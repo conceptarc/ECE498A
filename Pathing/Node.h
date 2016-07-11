@@ -2,6 +2,7 @@
 #define NODE_H
 
 #include <vector>
+#include <unordered_set>
 #define nullptr 0
 
 using namespace std;
@@ -19,6 +20,10 @@ private:
 	Node* _east;
 	Node* _south;
 	Node* _west;
+	Node* _northEast;
+	Node* _northWest;
+	Node* _southEast;
+	Node* _southWest;
 
 public:
 	Node();
@@ -30,12 +35,19 @@ public:
 	bool IsOccupied();
 	bool IsStart();
 	bool IsGoal();
+	float X;
+	float Y;
 	float GetHeuristicDist();
 	Node* GetNorth();
 	Node* GetEast();
 	Node* GetSouth();
 	Node* GetWest();
+	Node* GetNorthEast();
+	Node* GetNorthWest();
+	Node* GetSouthEast();
+	Node* GetSouthWest();
 	vector<Node*> GetAllAdjacent();
+	unordered_set<Node*> GetDiagonals();
 	char Print();
 	
 	// mutators
@@ -50,6 +62,10 @@ public:
 	void SetEast(Node* east);
 	void SetSouth(Node* south);
 	void SetWest(Node* west);
+	void SetNorthEast(Node* northEast);
+	void SetNorthWest(Node* northWest);
+	void SetSouthEast(Node* southEast);
+	void SetSouthWest(Node* southWest);
 };
 
 Node::Node() {
@@ -102,12 +118,41 @@ Node* Node::GetWest() {
 	return _west;
 }
 
+Node* Node::GetNorthEast() {
+	return _northEast;
+}
+
+Node* Node::GetNorthWest() {
+	return _northWest;
+}
+
+Node* Node::GetSouthEast() {
+	return _southEast;
+}
+
+Node* Node::GetSouthWest() {
+	return _southWest;
+}
+
 vector<Node*> Node::GetAllAdjacent() {
 	vector<Node*> children;
 	children.push_back(_north);
 	children.push_back(_east);
 	children.push_back(_south);
 	children.push_back(_west);
+	children.push_back(_northEast);
+	children.push_back(_northWest);
+	children.push_back(_southEast);
+	children.push_back(_southWest);
+	return children;
+}
+
+unordered_set<Node*> Node::GetDiagonals() {
+	unordered_set<Node*> children;
+	children.insert(_northEast);
+	children.insert(_northWest);
+	children.insert(_southEast);
+	children.insert(_southWest);
 	return children;
 }
 
@@ -162,6 +207,22 @@ void Node::SetSouth(Node* south) {
 
 void Node::SetWest(Node* west) {
 	_west = west;
+}
+
+void Node::SetNorthEast(Node* northEast) {
+	_northEast = northEast;
+}
+
+void Node::SetNorthWest(Node* northWest) {
+	_northWest = northWest;
+}
+
+void Node::SetSouthEast(Node* southEast) {
+	_southEast = southEast;
+}
+
+void Node::SetSouthWest(Node* southWest) {
+	_southWest = southWest;
 }
 
 #endif

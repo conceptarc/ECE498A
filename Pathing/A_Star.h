@@ -31,38 +31,46 @@ TestResult A_Star::FindPath(Map* map2d) {
 	unordered_map<Node*, float> costList;
 
 	Node* current = map2d->GetStart();
+	Node* currentBest = current;
+	float bestHeuristic = FLT_MAX;
 	openList.insert(current);
 	parentList[current] = nullptr;
-	costList[current] = current->GetHeuristicDist();
+	costList[current] = map2d->CalcHeuristic(current); // ->GetHeuristicDist();
 	int debugCounter = 0;
 	int limit = 2 * map2d->GetResolution()* map2d->GetResolution();
 
 	while (debugCounter++ < limit) {		
 		// find lowest F cost and assign that node as current
-		double currentTime = (clock() - timer) / (double)CLOCKS_PER_SEC;
-		if (currentTime > 5) break;
+		if (map2d->CalcHeuristic(current) < bestHeuristic) { // July 14 update: must calculate heuristic before 
+			bestHeuristic = current->GetHeuristicDist();
+			currentBest = current;
+		}
 
-		Node* previous = current;
 		current = NextNode(costList);
 
 		openList.erase(current);
 		closedList.insert(current);
 		if (current == nullptr || current == map2d->GetGoal()) {
-			if (current == nullptr) current = previous;
-			double duration = (clock() - timer) / (double)CLOCKS_PER_SEC;
+			if (current == nullptr)
+				current = currentBest;
+
+			double duration = (clock() - timer) / (double)CLOCKS_PER_SEC; // for debugging
 
 			// print the final path and distance
 			deque<Node*> finalPath = GetPath(parentList, current);
 			float distance = 0;
 			finalPath[0]->SetPath(true);
+			map2d->PathNodeList.push_back(finalPath[0]);
 			for (int i = 1; i < finalPath.size(); i++) {
 				finalPath[i]->SetPath(true);
-				map2d->PathNodesToClear.push_back(finalPath[i]);
+				map2d->PathNodeList.push_back(finalPath[i]);
 				float tempDist = map2d->GetMapSize() / map2d->GetResolution();
 				if (finalPath[i]->GetDiagonals().count(finalPath[i - 1]) != 0)
 					tempDist = sqrtf(2*tempDist*tempDist);
 				distance += tempDist;
 			}
+			if (current == map2d->GetGoal())
+				map2d->PathNodeList.push_back(current); // pad this list with another Goal so the dynamic mapping will move the S to G
 			/*for each (Node* node in closedList) {
 				node->SetVisited(true);
 			}*/
@@ -83,17 +91,17 @@ TestResult A_Star::FindPath(Map* map2d) {
 		for (int i = 0; i < adjacent.size(); i++) {
 			Node* node = adjacent[i];
 			if (node == nullptr || closedList.count(node) != 0) continue;
-			if (node->IsOccupied()) {
+			if (node->IsOccupied() || node->IsOccupationPredicted) {
 				closedList.insert(node);
 				continue;
 			}
 			// if this is not in OPEN or if its a shorter path than the one in OPEN
 			// then add/replace in OPEN as needed
-			float temp = current->GetHeuristicDist();
+			float temp = map2d->CalcHeuristic(current); // July 14 change: Heuristics must be calculated the first time they are used
 			float deltaG = map2d->GetMapSize() / map2d->GetResolution();
 			if (current->GetDiagonals().count(node) != 0)
 				deltaG = sqrtf(2*deltaG*deltaG); // get diagonal distance
-			float newPath = costList[current] - current->GetHeuristicDist() + deltaG + node->GetHeuristicDist();
+			float newPath = costList[current] - current->GetHeuristicDist() + deltaG + map2d->CalcHeuristic(node);
 			if (openList.count(node) == 0) {
 				openList.insert(node);
 				costList[node] = newPath;

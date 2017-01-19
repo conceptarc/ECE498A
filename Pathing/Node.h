@@ -35,6 +35,8 @@ public:
 	bool IsOccupied();
 	bool IsStart();
 	bool IsGoal();
+	bool IsObjectPresent;
+	bool IsOccupationPredicted;
 	float X;
 	float Y;
 	float GetHeuristicDist();
@@ -136,14 +138,14 @@ Node* Node::GetSouthWest() {
 
 vector<Node*> Node::GetAllAdjacent() {
 	vector<Node*> children;
-	children.push_back(_north);
-	children.push_back(_east);
-	children.push_back(_south);
-	children.push_back(_west);
-	children.push_back(_northEast);
-	children.push_back(_northWest);
-	children.push_back(_southEast);
-	children.push_back(_southWest);
+	if (_north != nullptr) children.push_back(_north);
+	if (_east != nullptr) children.push_back(_east);
+	if (_south != nullptr) children.push_back(_south);
+	if (_west != nullptr) children.push_back(_west);
+	if (_northEast != nullptr) children.push_back(_northEast);
+	if (_northWest != nullptr) children.push_back(_northWest);
+	if (_southEast != nullptr) children.push_back(_southEast);
+	if (_southWest != nullptr) children.push_back(_southWest);
 	return children;
 }
 
@@ -157,11 +159,13 @@ unordered_set<Node*> Node::GetDiagonals() {
 }
 
 char Node::Print() {
-	if (_isOccupied) return 'X';
 	if (_isGoal) return 'G';
 	if (_isStart) return 'S';
+	if (_isOccupied) return 'X';
+	if (IsOccupationPredicted) return 'X';
 	if (_isPath) return '.';
 	if (_isVisited) return 'o';
+	if (IsObjectPresent) return 'o';
 	return ' ';
 }
 

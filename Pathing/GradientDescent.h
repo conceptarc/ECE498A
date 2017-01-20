@@ -47,14 +47,14 @@ TestResult GradientDescent::FindPath(Map* map) {
 	pathList[0]->SetPath(true);
 	for (int i = 1; i < pathList.size(); i++) {
 		pathList[i]->SetPath(true);
-		float tempDist = 100.0 / map->GetResolution();
+		float tempDist = 100.0f / map->GetResolution();
 		if (pathList[i]->GetDiagonals().count(pathList[i - 1]) != 0)
 			tempDist = sqrtf(2 * tempDist*tempDist);
 		distance += tempDist;
 	}
 
 	output.solutionDistance = distance;
-	output.nodesVisited = pathList.size();
+	output.nodesVisited = (int)pathList.size();
 	output.widthResolution = map->GetResolution();
 	output.nodesTotal = map->GetResolution() * map->GetResolution();
 	output.percentVisited = output.nodesVisited / ((double)output.nodesTotal);

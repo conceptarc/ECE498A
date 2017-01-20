@@ -7,7 +7,7 @@
 #include <unordered_set>
 #include <ctime>
 #include "Node.h"
-#include "Map.h"
+#include "TreadmillMap.h"
 #include "TestResult.h"
 #define nullptr 0
 
@@ -18,10 +18,10 @@ private:
 	static Node* NextNode(unordered_map<Node*, float> &costList);
 	static deque<Node*> GetPath(unordered_map<Node*, Node*> &pathList, Node* &end);
 public:
-	static TestResult FindPath(Map* map);
+	static TestResult FindPath(TreadmillMap* map);
 };
 
-TestResult A_Star::FindPath(Map* map2d) {
+TestResult A_Star::FindPath(TreadmillMap* map2d) {
 	TestResult output;
 	clock_t timer = clock(); // optional
 
@@ -77,7 +77,7 @@ TestResult A_Star::FindPath(Map* map2d) {
 			output.algorithmName = "A Star";
 			output.hasSolution = current == map2d->GetGoal();
 			output.nodesTotal = map2d->GetResolution() * map2d->GetResolution();
-			output.nodesVisited = openList.size() + closedList.size();
+			output.nodesVisited = (int)openList.size() + (int)closedList.size();
 			output.percentVisited = output.nodesVisited / ((double)output.nodesTotal);
 			output.solutionDistance = distance;
 			output.solutionTime = duration;

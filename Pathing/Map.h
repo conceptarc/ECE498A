@@ -231,7 +231,7 @@ Map::Map(int resolution, MapOption option, MapObstacleSet obsOption) : _resoluti
 	_topLeft = map2d[0][0];
 
 	// init _thisCar
-	_thisCar = new MobileObstacle(25, 3.14159 / 2.0, -1, _start->X, _start->Y, 0);
+	_thisCar = new MobileObstacle(25, 3.14159f / 2.0, -1, _start->X, _start->Y, 0);
 }
 
 Map::~Map() {
@@ -538,8 +538,8 @@ float Map::CalcGradientObsHeight(float distance, float radius, float padding) {
 }
 
 Node* Map::CalcNodeFromCoordinate(float x, float y) {
-	int iApprox = (int)(roundf(_resolution - 0.5 - _resolution / MAP_SIZE*y)); // inverse function of y
-	int jApprox = (int)(roundf(_resolution / MAP_SIZE*x - 0.5)); // inverse function of x
+	int iApprox = (int)(roundf(_resolution - 0.5f - _resolution / MAP_SIZE*y)); // inverse function of y
+	int jApprox = (int)(roundf(_resolution / MAP_SIZE*x - 0.5f)); // inverse function of x
 
 	// restrict indices - just because the centre point is off the map does not mean the object is off the map (due to radius)
 	// this point is used as a starting point for the search

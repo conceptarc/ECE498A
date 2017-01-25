@@ -3,32 +3,38 @@
 
 using namespace std;
 
-TreadmillMap::TreadmillMap(int width, int height, float resolutionFactor, MapGridOption option) : _resolution(resolutionFactor) {
-	// some arbitrary constants / constraints
-	MAP_SIZE = 100.0f;
-	START_X = 15.0f;
-	START_Y = 15.0f;
-	GOAL_X = 85.0f;
-	GOAL_Y = 85.0f;
+TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor, MapGridOption option) : _resolution(resolutionFactor) {
+	// some constants / constraints
+	_projectionHeight = width + length; // some constant that is approx eq to max heuristic value
+
+	MAP_WIDTH_CM = width;
+	MAP_LENGTH_CM = length;
+
+	MAP_WIDTH_NODES = (int)round(width * resolutionFactor);
+	MAP_LENGTH_NODES = (int)round(length * resolutionFactor);
+
+	START_X = 0.0f; // init the values
+	START_Y = 0.0f; // use void SetStart(float x, float y);	void SetGoal(float x, float y); to set these later
+	GOAL_X = 0.0f;
+	GOAL_Y = 0.0f;
 	PADDING = 1; // n units away from radius of obstacle
 
 	// generate a fixed map with variable resolution
-
 	// create 2D array of pointers
-	map2d = new Node**[height/*resolutionFactor*/]; // rows
-	for (int i = 0; i < _resolution; i++) {
-		map2d[i] = new Node*[width/*resolutionFactor*/]; // columns
+	map2d = new Node**[MAP_LENGTH_NODES]; // rows
+	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
+		map2d[i] = new Node*[MAP_WIDTH_NODES]; // columns
 	}
 
 	// initialize
-	for (int i = 0; i < _resolution; i++) {
-		for (int j = 0; j < _resolution; j++) {
+	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
+		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			map2d[i][j] = new Node();
 		}
 	}
 
 	// now assign properties and references for each one
-	float nodeWidth = MAP_SIZE / _resolution;
+	float nodeWidth = 1 / resolutionFactor; // unit is cm (centimetres)
 	float startProximity = nodeWidth * 2; // used for finding the start node
 	float goalProximity = nodeWidth * 2; // used for finding the goal node
 
@@ -38,25 +44,26 @@ TreadmillMap::TreadmillMap(int width, int height, float resolutionFactor, MapGri
 	float wallThickness = 1.5;
 
 	// now populate each node's properties with the information above
-	for (int i = 0; i < _resolution; i++) {
-		for (int j = 0; j < _resolution; j++) {
+	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
+		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			Node* node = map2d[i][j];
-			node->SetID(i*_resolution + j); // ascending integer for ID
+			node->SetID(i*MAP_WIDTH_NODES + j); // ascending integer for ID
 
 											// set 4-primary links
 			node->SetNorth(i == 0 ? NULL : map2d[i - 1][j]);
-			node->SetSouth(i == _resolution - 1 ? NULL : map2d[i + 1][j]);
+			node->SetSouth(i == MAP_LENGTH_NODES - 1 ? NULL : map2d[i + 1][j]);
 			node->SetWest(j == 0 ? NULL : map2d[i][j - 1]);
-			node->SetEast(j == _resolution - 1 ? NULL : map2d[i][j + 1]);
+			node->SetEast(j == MAP_WIDTH_NODES - 1 ? NULL : map2d[i][j + 1]);
 
 			// set 4-diagonal links
-			node->SetNorthEast(i == 0 || j == _resolution - 1 ? NULL : map2d[i - 1][j + 1]);
+			node->SetNorthEast(i == 0 || j == MAP_WIDTH_NODES - 1 ? NULL : map2d[i - 1][j + 1]);
 			node->SetNorthWest(i == 0 || j == 0 ? NULL : map2d[i - 1][j - 1]);
-			node->SetSouthEast(i == _resolution - 1 || j == _resolution - 1 ? NULL : map2d[i + 1][j + 1]);
-			node->SetSouthWest(i == _resolution - 1 || j == 0 ? NULL : map2d[i + 1][j - 1]);
+			node->SetSouthEast(i == MAP_LENGTH_NODES - 1 || j == MAP_WIDTH_NODES - 1 ? NULL : map2d[i + 1][j + 1]);
+			node->SetSouthWest(i == MAP_LENGTH_NODES - 1 || j == 0 ? NULL : map2d[i + 1][j - 1]);
 
+			// assign real world positions (cm) to each node
 			float x = nodeWidth * j + nodeWidth / 2;
-			float y = nodeWidth * (_resolution - i - 1) + nodeWidth / 2;
+			float y = nodeWidth * (MAP_LENGTH_NODES - i - 1) + nodeWidth / 2;
 			node->X = x;
 			node->Y = y; // added for dynamic maps/obstacles
 
@@ -64,7 +71,9 @@ TreadmillMap::TreadmillMap(int width, int height, float resolutionFactor, MapGri
 			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y, false); // true means use Manhattan
 			node->SetHeuristic(distToGoal); // calculated above, might as well use it
 
-											// find the start node
+
+			/*
+			// find the start node
 			if (distToStart < startProximity) {
 				startProximity = distToStart;
 				if (_start != nullptr) _start->SetStart(false);
@@ -78,7 +87,7 @@ TreadmillMap::TreadmillMap(int width, int height, float resolutionFactor, MapGri
 				if (_goal != nullptr) _goal->SetGoal(false);
 				_goal = node;
 				_goal->SetGoal(true);
-			}
+			}*/
 
 			// address the existing obstacles
 			for (int i = 0; i < obsList.size(); i++) {
@@ -106,12 +115,12 @@ TreadmillMap::TreadmillMap(int width, int height, float resolutionFactor, MapGri
 	_topLeft = map2d[0][0];
 
 	// init _thisCar
-	_thisCar = new MobileObstacle(25, PI / 2.0, -1, _start->X, _start->Y, 0);
+	_thisCar = new MobileObstacle(5, PI / 2.0, -1, 0, 0, 2); //_start->X, _start->Y, 2);
 }
 
 TreadmillMap::~TreadmillMap() {
-	for (int i = 0; i < _resolution; i++) {
-		for (int j = 0; j < _resolution; j++) {
+	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
+		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			delete map2d[i][j];
 		}
 		delete[] map2d[i];
@@ -124,8 +133,25 @@ TreadmillMap::~TreadmillMap() {
 	_obstacleList.clear();
 }
 
-float TreadmillMap::GetMapSize() {
-	return MAP_SIZE; // read only value
+int TreadmillMap::GetMapWidthCm() {
+	return MAP_WIDTH_CM; // read only value
+}
+
+int TreadmillMap::GetMapWidthNodes() {
+	return MAP_WIDTH_NODES; // read only value
+}
+
+int TreadmillMap::GetMapLengthCm() {
+	return MAP_LENGTH_CM; // read only value
+}
+
+int TreadmillMap::GetMapLengthNodes() {
+	return MAP_LENGTH_NODES; // read only value
+}
+
+float TreadmillMap::CalcNodeWidthCm()
+{
+	return 1.0f / _resolution;
 }
 
 void TreadmillMap::AddObstacle(MobileObstacle* obj) {
@@ -146,7 +172,18 @@ void TreadmillMap::ClearObstacles() {
 	_obstacleList.clear();
 }
 
-int TreadmillMap::GetResolution() {
+void TreadmillMap::ClearProjection()
+{
+	for (int i = 0; i < _obstacleList.size(); i++) {
+		MobileObstacle* obj = _obstacleList[i];
+		for (int j = 0; j < obj->ProjectionArea.size(); j++) {
+			obj->ProjectionArea[j]->IsOccupationPredicted = false;
+		}
+		obj->ProjectionArea.clear();
+	}
+}
+
+float TreadmillMap::GetResolution() {
 	return _resolution;
 }
 
@@ -160,50 +197,51 @@ Node* TreadmillMap::GetGoal() {
 
 void TreadmillMap::SetStart(float x, float y) {
 	Node* target = CalcNodeFromCoordinate(x, y);
-	//if (target == nullptr) return; actually let it crash
-	_start->SetStart(false);
+	START_X = target->X;
+	START_Y = target->Y;
+	if (_start != NULL)
+		_start->SetStart(false);
 	_start = target;
 	_start->SetStart(true);
-	_thisCar->X = x;
+
+	_thisCar->X = x; // move this elsewhere?
 	_thisCar->Y = y;
 }
 
 void TreadmillMap::SetGoal(float x, float y) {
 	Node* target = CalcNodeFromCoordinate(x, y);
-	//if (target == nullptr) return; actually let it crash
-	_goal->SetGoal(false);
+	GOAL_X = target->X;
+	GOAL_Y = target->Y;
+	if (_goal != NULL)
+		_goal->SetGoal(false);
 	_goal = target;
 	_goal->SetGoal(true);
+
+	// whenever the goal is moved, the map weighting must be recalculated
+	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
+		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
+			Node* node = map2d[i][j];
+			float distToStart = CalcDist(x, START_X, y, START_Y, false);
+			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y, false); // true means use Manhattan
+			node->SetHeuristic(distToGoal); // calculated above, might as well use it
+		}
+	}
 }
 
 float TreadmillMap::CalcHeuristic(Node* node) {
 	float h = CalcDist(node->X, _goal->X, node->Y, _goal->Y, false);
 	node->SetHeuristic(h);
+	if (node->IsOccupationPredicted) return h + _projectionHeight;
 	return h;
 }
 
 void TreadmillMap::Print() {
 
 	//debug print nodes
-	/*
-	for (int i = -1; i <= _resolution; i++) {
-	for (int j = -1; j <= _resolution; j++) {
-	if (i == -1 || i == _resolution)
-	cout << '-';
-	else if (j == -1 || j == _resolution)
-	cout << '|';
-	else
-	cout << map2d[i][j]->Print();
-	}
-	cout << endl;
-	}
-
-	cout << endl;
-	*/
 	Node* column = _topLeft;
 	Node* row = _topLeft;
 
-	for (int i = 0; i < _resolution + 2; i++) {
+	for (int i = 0; i < MAP_WIDTH_NODES + 2; i++) {
 		cout << '-';
 	} // top boundary
 
@@ -219,7 +257,7 @@ void TreadmillMap::Print() {
 		column = column->GetSouth();
 	} while (column != nullptr);
 
-	for (int i = 0; i < _resolution + 2; i++) { // bottom boundary
+	for (int i = 0; i < MAP_WIDTH_NODES + 2; i++) { // bottom boundary
 		cout << '-';
 	}
 }
@@ -323,7 +361,7 @@ void TreadmillMap::UpdateCurrentLocation(float deltaTime) {
 	// update the path list
 	// find the closest node in the path
 	int cutoffIndex = 0;
-	float distToCar = MAP_SIZE * 2;
+	float distToCar = MAP_LENGTH_CM * 2; // arbitrary long distance (upper bound of search)
 	for (int i = 0; i < PathNodeList.size() - 1; i++) {
 		Node* current = PathNodeList[i];
 		float distToNode = CalcDist(current->X, _thisCar->X, current->Y, _thisCar->Y, false);
@@ -344,27 +382,30 @@ void TreadmillMap::UpdateCurrentLocation(float deltaTime) {
 	_start = PathNodeList[cutoffIndex];
 	_start->SetStart(true);
 
-	// update collision prediction
+	// initialize and update collision prediction
 	tuple<Node*, MobileObstacle*> result = FindCollisionPoint();
 	Node* centrePoint = get<0>(result);
 	MobileObstacle* collider = get<1>(result);
 
 	if (centrePoint != nullptr && collider != nullptr) {
 		// project this collider on to the centre point
-		float nodeWidth = MAP_SIZE / (float)_resolution;
-		MobileObstacle projection = MobileObstacle(0, 0, 0, centrePoint->X, centrePoint->Y, collider->Radius + 2 * nodeWidth);
+		MobileObstacle projection = MobileObstacle(0, 0, 0, centrePoint->X, centrePoint->Y, collider->Radius + 1); // +x cm to the radius
 		cout << projection.X << ", " << projection.Y << endl;
-		vector<Node*> newArea = CalcNewObjectArea(projection);
+		vector<Node*> newProjectionArea = CalcNewObjectArea(projection);
+
 		for (int i = 0; i < collider->ProjectionArea.size(); i++) {
-			//collider->ProjectionArea[i]->IsOccupationPredicted = false; // node->SetOccupied(false);
+			collider->ProjectionArea[i]->IsOccupationPredicted = false; // node->SetOccupied(false);
 		}
-		//collider->ProjectionArea.clear();
-		cout << newArea.size() << endl;
-		for (int i = 0; i < newArea.size(); i++) {
-			Node* node = newArea[i];
+		cout << newProjectionArea.size() << endl;
+		for (int i = 0; i < newProjectionArea.size(); i++) {
+			Node* node = newProjectionArea[i];
 			node->IsOccupationPredicted = true; // node->SetOccupied(true);
 			collider->ProjectionArea.push_back(node);
 		}
+	}
+	else
+	{
+		ClearProjection();
 	}
 }
 
@@ -386,7 +427,7 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindCollisionPoint() {
 			vector<Node*> newArea = CalcNewObjectArea(projection);
 			for (int k = 0; k < newArea.size(); k++) {
 				Node* node = newArea[k];
-				if (node == CalcNodeFromCoordinate(previous->X, previous->Y)) {
+				if (node == previous) {
 					cout << "predicted path node index: " << i << endl;
 					cout << "predicted collision coord: " << projection.X << ", " << projection.Y << endl;
 					cout << "predicted collision time: " << time << endl;
@@ -408,20 +449,20 @@ float TreadmillMap::CalcDist(float x1, float x2, float y1, float y2, bool useMan
 float TreadmillMap::CalcGradientObsHeight(float distance, float radius, float padding) {
 	if (distance <= radius) return FLT_MAX;
 	if (distance < radius + padding)
-		return MAP_SIZE / (distance - radius) - MAP_SIZE / (padding);
+		return MAP_WIDTH_CM / (distance - radius) - MAP_WIDTH_CM / (padding);
 	return 0.0f;
 }
 
 Node* TreadmillMap::CalcNodeFromCoordinate(float x, float y) {
-	int iApprox = (int)(roundf(_resolution - 0.5f - _resolution / MAP_SIZE*y)); // inverse function of y
-	int jApprox = (int)(roundf(_resolution / MAP_SIZE*x - 0.5f)); // inverse function of x
+	int iApprox = (int)(roundf(MAP_LENGTH_NODES - 0.5f - y / CalcNodeWidthCm())); // inverse function of vertical coord
+	int jApprox = (int)(roundf(x/CalcNodeWidthCm() - 0.5f)); // inverse function of horizontal coord
 
 	// restrict indices - just because the centre point is off the map does not mean the object is off the map (due to radius)
 	// this point is used as a starting point for the search
 	iApprox = (int)fmax(iApprox, 0);
-	iApprox = (int)fmin(iApprox, _resolution - 1);
+	iApprox = (int)fmin(iApprox, MAP_LENGTH_NODES - 1);
 	jApprox = (int)fmax(jApprox, 0);
-	jApprox = (int)fmin(jApprox, _resolution - 1);
+	jApprox = (int)fmin(jApprox, MAP_WIDTH_NODES - 1);
 
 	return map2d[iApprox][jApprox];
 }

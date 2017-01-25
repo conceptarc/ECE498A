@@ -37,7 +37,7 @@ TestResult A_Star::FindPath(TreadmillMap* map2d) {
 	parentList[current] = nullptr;
 	costList[current] = map2d->CalcHeuristic(current); // ->GetHeuristicDist();
 	int debugCounter = 0;
-	int limit = 2 * map2d->GetResolution()* map2d->GetResolution();
+	int limit = 2 * map2d->GetMapWidthNodes() * map2d->GetMapLengthNodes();
 
 	while (debugCounter++ < limit) {		
 		// find lowest F cost and assign that node as current
@@ -64,7 +64,7 @@ TestResult A_Star::FindPath(TreadmillMap* map2d) {
 			for (int i = 1; i < finalPath.size(); i++) {
 				finalPath[i]->SetPath(true);
 				map2d->PathNodeList.push_back(finalPath[i]);
-				float tempDist = map2d->GetMapSize() / map2d->GetResolution();
+				float tempDist = map2d->CalcNodeWidthCm(); // dist between two nodes
 				if (finalPath[i]->GetDiagonals().count(finalPath[i - 1]) != 0)
 					tempDist = sqrtf(2*tempDist*tempDist);
 				distance += tempDist;
@@ -98,7 +98,7 @@ TestResult A_Star::FindPath(TreadmillMap* map2d) {
 			// if this is not in OPEN or if its a shorter path than the one in OPEN
 			// then add/replace in OPEN as needed
 			float temp = map2d->CalcHeuristic(current); // July 14 change: Heuristics must be calculated the first time they are used
-			float deltaG = map2d->GetMapSize() / map2d->GetResolution();
+			float deltaG = map2d->CalcNodeWidthCm(); // dist between two nodes
 			if (current->GetDiagonals().count(node) != 0)
 				deltaG = sqrtf(2*deltaG*deltaG); // get diagonal distance
 			float newPath = costList[current] - current->GetHeuristicDist() + deltaG + map2d->CalcHeuristic(node);

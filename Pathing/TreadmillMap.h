@@ -22,12 +22,19 @@ enum class MapGridOption {
 class TreadmillMap {
 
 private:
-	float MAP_SIZE;
+	int MAP_WIDTH_CM;
+	int MAP_WIDTH_NODES;
+
+	int MAP_LENGTH_CM;
+	int MAP_LENGTH_NODES;
+
 	float START_X;
 	float START_Y;
 	float GOAL_X;
 	float GOAL_Y;
 	float PADDING;
+
+	float _projectionHeight;
 
 	float _resolution;
 	Node*** map2d;
@@ -48,10 +55,16 @@ public:
 	TreadmillMap(int width, int length, float resolutionFactor, MapGridOption option); // width & length are in cm
 	~TreadmillMap();
 
-	float GetMapSize();
+	int GetMapWidthCm();
+	int GetMapWidthNodes();
+	int GetMapLengthCm();
+	int GetMapLengthNodes();
+	float CalcNodeWidthCm();
+
 	void AddObstacle(MobileObstacle* obj);
 	void ClearObstacles();
-	int GetResolution();
+	void ClearProjection();
+	float GetResolution();
 	Node* GetStart();
 	Node* GetGoal();
 	void SetStart(float x, float y);

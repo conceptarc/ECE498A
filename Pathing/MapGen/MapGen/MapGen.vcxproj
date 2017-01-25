@@ -120,17 +120,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\DynamicMapTest.cpp" />
-    <ClCompile Include="..\..\MapTest.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\MobileObstacle.cpp" />
+    <ClCompile Include="..\..\Node.cpp" />
+    <ClCompile Include="..\..\Obstacle.cpp" />
+    <ClCompile Include="..\..\TreadmillMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\A_Star.h" />
     <ClInclude Include="..\..\BestFirst.h" />
     <ClInclude Include="..\..\Dijkstra.h" />
     <ClInclude Include="..\..\GradientDescent.h" />
-    <ClInclude Include="..\..\Map.h" />
+    <ClInclude Include="..\..\Map.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\TreadmillMap.h" />
     <ClInclude Include="..\..\MobileObstacle.h" />
     <ClInclude Include="..\..\Node.h" />
     <ClInclude Include="..\..\NonCyclicUniform.h" />

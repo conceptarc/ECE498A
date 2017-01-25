@@ -15,15 +15,22 @@ using namespace std;
 #define nullptr 0
 //#define PI 3.14159f
 
+void setup(TreadmillMap* currentMap) {
+
+	currentMap->SetStart(0, 0);
+	currentMap->SetGoal(15, 15);
+	currentMap->AddObstacle(new MobileObstacle(2, -PI/2.0, 111, 9, 15, 2)); // TESTING
+	currentMap->AddObstacle(new MobileObstacle(2, PI, 123, 10, 9, 2));
+	currentMap->AddObstacle(new MobileObstacle(2, 0, 222, 0, 5, 2));
+}
+
 int main() {
 	
 	char pause; // for final key input
-	TreadmillMap* temp = new TreadmillMap(120, 220, 1, MapGridOption::GridOccupation);
-	//temp->SetGoal(15, 15);
-	temp->AddObstacle(new MobileObstacle(25, -2 / 4.0 * PI, 123, 40, 90, 10)); // TESTING
-	temp->AddObstacle(new MobileObstacle(25, PI, 123, 100, 70, 10));
-	//temp->AddObstacle(new MobileObstacle(25, -2.5 / 4.0 * PI, 123, 90, 90, 10));
-	//temp->AddObstacle(new MobileObstacle(20, -3 / 4.0 * PI, 123, 90, 90, 10));
+	TreadmillMap* temp = new TreadmillMap(10, 15, 2, MapGridOption::GridOccupation);
+	setup(temp);
+
+
 	clock_t start = clock();
 	float time = (clock() - start) / (float)CLOCKS_PER_SEC;
 	Node* originalStart = temp->GetStart();
@@ -32,13 +39,14 @@ int main() {
 		while (time < 6) {
 			float newTime = (clock() - start) / (float)CLOCKS_PER_SEC;
 			cout << endl;
-			this_thread::sleep_for(chrono::milliseconds(100)); // add artifical delay for testing
+			this_thread::sleep_for(chrono::milliseconds(35)); // add artifical delay for testing
 
 			float deltaTime = newTime - time;
 
 			temp->UpdateMobileObstacles(deltaTime);
 			TestResult debug = A_Star::FindPath(temp);
 			temp->UpdateCurrentLocation(deltaTime);
+			//temp->ClearProjection();
 
 			cout << debug.solutionTime << endl;
 			temp->Print();
@@ -49,15 +57,12 @@ int main() {
 
 		//temp->Print();
 		cout << "restart? "<< endl;
+		cin >> pause;
 
 		temp->ClearObstacles();
-		temp->SetStart(15, 15);
-		//temp->SetGoal(15, 15);
-		cin >> pause;
-		temp->AddObstacle(new MobileObstacle(25, -2 / 4.0 * PI, 123, 40, 90, 10));
-		temp->AddObstacle(new MobileObstacle(25, PI, 123, 100, 70, 10));
-		//temp->AddObstacle(new MobileObstacle(25, -2.5 / 4.0 * PI, 123, 90, 90, 10));
-		//temp->AddObstacle(new MobileObstacle(20, -3 / 4.0 * PI, 123, 90, 90, 10));
+		setup(temp);
+
+
 		start = clock();
 		time = 0;
 	}

@@ -76,12 +76,12 @@ TestResult A_Star::FindPath(TreadmillMap* map2d) {
 			}*/
 			output.algorithmName = "A Star";
 			output.hasSolution = current == map2d->GetGoal();
-			output.nodesTotal = map2d->GetResolution() * map2d->GetResolution();
+			output.nodesTotal = map2d->GetMapWidthNodes() * map2d->GetMapLengthNodes();
 			output.nodesVisited = (int)openList.size() + (int)closedList.size();
 			output.percentVisited = output.nodesVisited / ((double)output.nodesTotal);
 			output.solutionDistance = distance;
 			output.solutionTime = duration;
-			output.widthResolution = map2d->GetResolution();
+			output.widthResolution = map2d->GetMapWidthNodes();
 
 			break;
 		}

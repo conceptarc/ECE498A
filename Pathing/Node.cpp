@@ -90,9 +90,9 @@ unordered_set<Node*> Node::GetDiagonals() {
 }
 
 char Node::Print() {
+	if (_isStart) return 'S';
 	if (_isGoal) return 'G';
 	if (IsObjectPresent) return 'o';
-	if (_isStart) return 'S';
 	if (IsOccupationPredicted) return '-';
 	if (_isOccupied) return 'X';
 	if (_isVisited) return 'o';

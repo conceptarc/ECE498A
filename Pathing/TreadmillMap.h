@@ -62,6 +62,7 @@ public:
 	float CalcNodeWidthCm();
 
 	void AddObstacle(MobileObstacle* obj);
+	int GetObstacleCount();
 	void ClearObstacles();
 	void ClearProjection();
 	float GetResolution();
@@ -72,9 +73,9 @@ public:
 	float CalcHeuristic(Node* node);
 
 	void Print();
-	void UpdateMobileObstacles(float deltaTime); // moving obstacles without generating the path
+	void UpdateMobileObstacles(float deltaTime, float currentTime); // moving obstacles without generating the path
 	deque<Node*> PathNodeList;
 	void ClearPath();
-	void UpdateCurrentLocation(float deltaTime); // update the start location
-	tuple<Node*, MobileObstacle*> FindCollisionPoint(); // costly to check + simulate the future collisions
+	bool UpdateCurrentLocation(float deltaTime, float currentTime); // update the start location, returns true if collision detected
+	tuple<Node*, MobileObstacle*> FindCollisionPoint(float currentTime); // costly to check + simulate the future collisions
 };

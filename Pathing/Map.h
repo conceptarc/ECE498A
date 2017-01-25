@@ -388,7 +388,7 @@ void Map::UpdateMobileObstacles(float deltaTime) {
 	for (int i = 0; i < _obstacleList.size(); i++) {
 		MobileObstacle* obj = _obstacleList[i];
 
-		obj->Move(deltaTime);
+		obj->Move(deltaTime, -1);
 		vector<Node*> newArea = CalcNewObjectArea(*obj);
 		
 		// apply changes to the map

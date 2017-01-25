@@ -13,11 +13,14 @@ public:
 	float Heading; // in radians
 	deque<Node*> ActualArea;
 	deque<Node*> ProjectionArea;
+	float ExpiryTime;
 
 	MobileObstacle();
 	MobileObstacle(float velocity, float heading, int id, float x, float y, float radius);
 	~MobileObstacle();
-	void Move(float deltaTime);
+	void Move(float deltaTime, float globalTime);
+	void SetExpiryTime(float expiryTime);
+	void ClearProjection();
 	MobileObstacle SimulateMove(float deltaTime);
 };
 

@@ -3,7 +3,7 @@
 
 using namespace std;
 
-TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor, MapGridOption option) : _resolution(resolutionFactor) {
+TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor) : _resolution(resolutionFactor) {
 	// some constants / constraints
 	_projectionHeight = (float)(width + length); // some constant that is approx eq to max heuristic value
 
@@ -26,24 +26,19 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor, MapGri
 		map2d[i] = new Node*[MAP_WIDTH_NODES]; // columns
 	}
 
-	// initialize
+	// initialize 2D grid with empty nodes
 	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
 		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			map2d[i][j] = new Node();
 		}
 	}
 
-	// now assign properties and references for each one
+	// assign properties and references for each one
 	float nodeWidth = 1 / resolutionFactor; // unit is cm (centimetres)
-	float startProximity = nodeWidth * 2; // used for finding the start node
-	float goalProximity = nodeWidth * 2; // used for finding the goal node
+	//float startProximity = nodeWidth * 2; // used for finding the start node
+	//float goalProximity = nodeWidth * 2; // used for finding the goal node
 
-										 // before iterating through each node, assign the obstacles (circular)
-	deque<Obstacle> obsList;
-	float scaling = 4;
-	float wallThickness = 1.5;
-
-	// now populate each node's properties with the information above
+	// populate each node's properties with the information above
 	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
 		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			Node* node = map2d[i][j];
@@ -67,27 +62,10 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor, MapGri
 			node->X = x;
 			node->Y = y; // added for dynamic maps/obstacles
 
+			/*
 			float distToStart = CalcDist(x, START_X, y, START_Y, false);
 			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y, false); // true means use Manhattan
 			node->SetHeuristic(distToGoal); // calculated above, might as well use it
-
-
-			/*
-			// find the start node
-			if (distToStart < startProximity) {
-				startProximity = distToStart;
-				if (_start != nullptr) _start->SetStart(false);
-				_start = node;
-				_start->SetStart(true);
-			}
-
-			// find the goal node
-			if (distToGoal < goalProximity) {
-				goalProximity = distToGoal;
-				if (_goal != nullptr) _goal->SetGoal(false);
-				_goal = node;
-				_goal->SetGoal(true);
-			}*/
 
 			// address the existing obstacles
 			for (int i = 0; i < obsList.size(); i++) {
@@ -109,13 +87,12 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor, MapGri
 						break;
 					}
 				}
-			}
+			}*/
 		}
 	}
-	_topLeft = map2d[0][0];
 
 	// init _thisCar
-	_thisCar = new MobileObstacle(30, PI / 2.0, -1, 0, 0, 2); //_start->X, _start->Y, 2);
+	_thisCar = new MobileObstacle(0, 0, -1, 0, 0, 0);
 }
 
 TreadmillMap::~TreadmillMap() {
@@ -225,15 +202,20 @@ void TreadmillMap::SetGoal(float x, float y) {
 	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
 		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			Node* node = map2d[i][j];
-			float distToStart = CalcDist(x, START_X, y, START_Y, false);
-			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y, false); // true means use Manhattan
+			float distToStart = CalcDist(x, START_X, y, START_Y);
+			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y); // true means use Manhattan
 			node->SetHeuristic(distToGoal); // calculated above, might as well use it
 		}
 	}
 }
 
+MobileObstacle * const TreadmillMap::GetThisCar()
+{
+	return _thisCar;
+}
+
 float TreadmillMap::CalcHeuristic(Node* node) {
-	float h = CalcDist(node->X, _goal->X, node->Y, _goal->Y, false);
+	float h = CalcDist(node->X, _goal->X, node->Y, _goal->Y);
 	node->SetHeuristic(h);
 	if (node->IsOccupationPredicted) return h + _projectionHeight;
 	return h;
@@ -242,8 +224,8 @@ float TreadmillMap::CalcHeuristic(Node* node) {
 void TreadmillMap::Print() {
 
 	//debug print nodes
-	Node* column = _topLeft;
-	Node* row = _topLeft;
+	Node* column = map2d[0][0];
+	Node* row = map2d[0][0];
 
 	for (int i = 0; i < MAP_WIDTH_NODES + 2; i++) {
 		cout << '-';
@@ -284,7 +266,7 @@ vector<Node*> TreadmillMap::CalcNewObjectArea(MobileObstacle obj) {
 			Node* node = neighbours[i];
 			if (node == nullptr) continue;
 
-			if (CalcDist(node->X, obj.X, node->Y, obj.Y, false) < obj.Radius) {
+			if (CalcDist(node->X, obj.X, node->Y, obj.Y) < obj.Radius) {
 				if (newNodeArea.count(node->GetID()) == 0) {
 					result.push_back(node);
 					newNodeArea.insert(node->GetID());
@@ -347,12 +329,14 @@ void TreadmillMap::ClearPath() {
 	PathNodeList.clear();
 }
 
+// deprecated
 bool TreadmillMap::UpdateCurrentLocation(float deltaTime, float currentTime) {
 	if (PathNodeList.size() == 0) return false;
 
 	Node* nextNode = PathNodeList.size() > 1 ? PathNodeList[1] : PathNodeList[0];
 	//cout << "Next car waypoint = {" << nextNode->X << ", " << nextNode->Y << "}" << endl;
-	_thisCar->Heading = atan2f(nextNode->Y - _thisCar->Y, nextNode->X - _thisCar->X);
+
+	/*_thisCar->Heading = atan2f(nextNode->Y - _thisCar->Y, nextNode->X - _thisCar->X);
 	//cout << "Heading = " << _thisCar->Heading << endl;
 
 	float distance = _thisCar->Velocity * deltaTime;
@@ -360,7 +344,7 @@ bool TreadmillMap::UpdateCurrentLocation(float deltaTime, float currentTime) {
 	float deltaY = distance * sinf(_thisCar->Heading);
 
 	_thisCar->X += deltaX;
-	_thisCar->Y += deltaY;
+	_thisCar->Y += deltaY;*/
 
 	// update the path list
 	// find the closest node in the path
@@ -368,7 +352,7 @@ bool TreadmillMap::UpdateCurrentLocation(float deltaTime, float currentTime) {
 	float distToCar = (float)MAP_LENGTH_CM * 2; // arbitrary long distance (upper bound of search)
 	for (int i = 0; i < PathNodeList.size() - 1; i++) {
 		Node* current = PathNodeList[i];
-		float distToNode = CalcDist(current->X, _thisCar->X, current->Y, _thisCar->Y, false);
+		float distToNode = CalcDist(current->X, _thisCar->X, current->Y, _thisCar->Y);
 		if (distToNode < distToCar) {
 			distToCar = distToNode;
 			cutoffIndex = i;
@@ -417,8 +401,9 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindCollisionPoint(float currentTime
 	for (int i = 1; i < PathNodeList.size(); i++) {
 		Node* current = PathNodeList[i];
 		Node* previous = PathNodeList[i - 1];
-		totalDist += CalcDist(current->X, previous->X, current->Y, previous->Y, false);
-		float time = totalDist / _thisCar->Velocity;
+		totalDist += CalcDist(current->X, previous->X, current->Y, previous->Y);
+		float speed = CalcDist(_thisCar->dX, 0, _thisCar->dY, 0); // reusing this equation
+		float time = totalDist / speed;
 
 		for (int j = 0; j < _obstacleList.size(); j++) {
 			MobileObstacle* obj = _obstacleList[j];
@@ -444,9 +429,7 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindCollisionPoint(float currentTime
 	return tuple<Node*, MobileObstacle*>(nullptr, nullptr);
 }
 
-float TreadmillMap::CalcDist(float x1, float x2, float y1, float y2, bool useManhattan) {
-	if (useManhattan)
-		return fabs(x1 - x2) + fabs(y1 - y2);
+float TreadmillMap::CalcDist(float x1, float x2, float y1, float y2) {
 	return sqrtf(powf(x1 - x2, 2) + powf(y1 - y2, 2));
 }
 

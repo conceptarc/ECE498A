@@ -5,8 +5,8 @@ MobileObstacle::MobileObstacle() : Obstacle(0, 0, 0, 0) {
 	// current deque is blank
 }
 
-MobileObstacle::MobileObstacle(float velocity, float heading, int id, float x, float y, float radius) :
-	Velocity(velocity), Heading(heading), Obstacle(id, x, y, radius) {
+MobileObstacle::MobileObstacle(int id, float x, float y, float dx, float dy, float radius) :
+	dX(dx), dY(dy), Obstacle(id, x, y, radius) {
 	// current deque is blank
 	ExpiryTime = -1;
 }
@@ -16,12 +16,8 @@ MobileObstacle::~MobileObstacle() {
 }
 
 void MobileObstacle::Move(float deltaTime, float globalTime) {
-	float distance = Velocity * deltaTime;
-	float deltaX = distance * cosf(Heading);
-	float deltaY = distance * sinf(Heading);
-
-	X = X + deltaX;
-	Y = Y + deltaY;
+	X = X + dX * deltaTime;
+	Y = Y + dY * deltaTime;
 
 	if (ExpiryTime > -1 && ExpiryTime < globalTime) {
 		ClearProjection();
@@ -42,9 +38,8 @@ void MobileObstacle::ClearProjection()
 }
 
 MobileObstacle MobileObstacle::SimulateMove(float deltaTime) {
-	float distance = Velocity * deltaTime;
-	float deltaX = distance * cosf(Heading);
-	float deltaY = distance * sinf(Heading);
+	float newX = X + dX * deltaTime;
+	float newY = Y + dY * deltaTime;
 
-	return MobileObstacle(Velocity, Heading, Id, X + deltaX, Y + deltaY, Radius);
+	return MobileObstacle(Id, newX, newY, dX, dY, Radius);
 }

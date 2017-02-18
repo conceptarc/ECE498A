@@ -9,14 +9,14 @@ using namespace std;
 
 class MobileObstacle : public Obstacle {
 public:
-	float Velocity; // in ms^-1
-	float Heading; // in radians
+	float dX; // velocity X component
+	float dY; // velocity Y component
 	deque<Node*> ActualArea;
 	deque<Node*> ProjectionArea;
 	float ExpiryTime;
 
 	MobileObstacle();
-	MobileObstacle(float velocity, float heading, int id, float x, float y, float radius);
+	MobileObstacle(int id, float x, float y, float dx, float dy, float radius);
 	~MobileObstacle();
 	void Move(float deltaTime, float globalTime);
 	void SetExpiryTime(float expiryTime);

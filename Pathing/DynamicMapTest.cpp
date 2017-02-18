@@ -1,9 +1,7 @@
 #pragma once
 
-#include "TreadmillMap.h"
+#include "TreadmillSystem.h"
 #include "MobileObstacle.h"
-#include "A_Star.h"
-#include "GradientDescent.h"
 #include <ctime>
 #include <string>
 #include <thread>
@@ -30,28 +28,42 @@ void setup1(TreadmillMap* currentMap) {
 }
 
 int main() {
-	
 	char pause; // for final key input
-	TreadmillMap* temp = new TreadmillMap(100, 150, 0.2f, MapGridOption::GridOccupation);
-	setup1(temp);
-
-
 	clock_t start = clock();
 	float time = (clock() - start) / (float)CLOCKS_PER_SEC;
-	Node* originalStart = temp->GetStart();
-	Node* originalGoal = temp->GetGoal();
+
 	while (true) {
+
+		TreadmillSystem* mapSystem = new TreadmillSystem();
+		mapSystem->SetTreadmillDimensions(100, 150, 0.2f);
+		mapSystem->SetGoal(50, 90);
+
+		float carX = 5;
+		float carY = 5;
+		mapSystem->UpdateCar(carX, carY, 0, 0);
+
 		while (time < 7) {
 			float currentTime = (clock() - start) / (float)CLOCKS_PER_SEC;
 			cout << endl;
-			this_thread::sleep_for(chrono::milliseconds(105)); // add artifical delay for testing
+			int msDelayForTesting = 110;
+			this_thread::sleep_for(chrono::milliseconds(msDelayForTesting)); // add artifical delay for testing
 
-			float deltaTime = currentTime - time;
+			pair<float, float> waypoint = mapSystem->GetNextWaypoint();
+			mapSystem->DebugPrint();
 
-			temp->UpdateMobileObstacles(deltaTime, currentTime);
+			float apparentSpeedX = (waypoint.first - carX) / msDelayForTesting * 1000.0f;
+			float apparentSpeedY = (waypoint.second - carY) / msDelayForTesting * 1000.0f;
+			// assume the car arrives at the exact point specified (for this test)
+			float carNewX = waypoint.first;
+			float carNewY = waypoint.second;
+			mapSystem->UpdateCar(carNewX, carNewY, apparentSpeedX, apparentSpeedY);
 
+			// update obstacles at some point
+
+			/*
 			// check N times for collision (N = number of obstacles) and recalc the path up to N-1 times
 			int recalculateCount = 0;
+
 			TestResult debug = A_Star::FindPath(temp);
 			bool hasCollision = temp->UpdateCurrentLocation(deltaTime, currentTime);
 			while (++recalculateCount < temp->GetObstacleCount() && hasCollision) {
@@ -61,28 +73,32 @@ int main() {
 				hasCollision = temp->UpdateCurrentLocation(deltaTime, currentTime);
 			}
 			//temp->ClearProjection();
-
+			*/
 			time = currentTime;
-			cout << currentTime/*debug.solutionTime*/ << endl;
-			temp->Print();
-			temp->ClearPath();
+			//cout << currentTime/*debug.solutionTime*/ << endl;
+			//temp->Print();
+			//temp->ClearPath();
 
 		}
 
 		//temp->Print();
-		cout << "restart? "<< endl;
+		cout << endl << "restart? " << endl;
 		cin >> pause;
+		delete mapSystem;
 
-		temp->ClearObstacles();
-		setup1(temp);
+		//temp->ClearObstacles();
+		//setup1(temp);
 
 
 		start = clock();
 		time = 0;
 	}
-	delete temp;
 
-	cin >> pause;
+
+	while (true) {
+		cin >> pause;
+	}
+
 	
 	return 0;
 }

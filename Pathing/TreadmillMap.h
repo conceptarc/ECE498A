@@ -14,11 +14,6 @@
 
 using namespace std;
 
-enum class MapGridOption {
-	GridOccupation,
-	GridGradient
-};
-
 class TreadmillMap {
 
 private:
@@ -40,11 +35,10 @@ private:
 	Node*** map2d;
 	Node* _start;
 	Node* _goal;
-	Node* _topLeft;
 	deque<MobileObstacle*> _obstacleList;
 	MobileObstacle* _thisCar;
 
-	float CalcDist(float x1, float x2, float y1, float y2, bool useManhattan);
+	float CalcDist(float x1, float x2, float y1, float y2);
 	float CalcGradientObsHeight(float distance, float radius, float padding);
 	Node* CalcNodeFromCoordinate(float x, float y);
 	vector<Node*> CalcNewObjectArea(MobileObstacle obj);
@@ -52,7 +46,7 @@ private:
 public:
 	// new constructor for a custom map size that fits the treadmill
 	// resolution factor = number of tiles : number of cm -> e.g. 5 cm * 5 cm with factor 2 = 10 tile * 10 tile grid
-	TreadmillMap(int width, int length, float resolutionFactor, MapGridOption option); // width & length are in cm
+	TreadmillMap(int width, int length, float resolutionFactor); // width & length are in cm
 	~TreadmillMap();
 
 	int GetMapWidthCm();
@@ -70,6 +64,8 @@ public:
 	Node* GetGoal();
 	void SetStart(float x, float y);
 	void SetGoal(float x, float y);
+	MobileObstacle* const GetThisCar();
+
 	float CalcHeuristic(Node* node);
 
 	void Print();

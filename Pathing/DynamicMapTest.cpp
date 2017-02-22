@@ -36,27 +36,37 @@ int main() {
 
 		TreadmillSystem* mapSystem = new TreadmillSystem();
 		mapSystem->SetTreadmillDimensions(100, 150, 0.2f);
-		mapSystem->SetGoal(50, 90);
+		mapSystem->SetGoal(50, 110);
+		mapSystem->UpdateObstacle(10, 25, 55, 0, 0, 15); // test stationary obstacle
+		//mapSystem->UpdateObstacle(101, 64, 45, -5, 5, 10); // test mobile obstacle
+		mapSystem->UpdateObstacle(102, 80, 100, -1.5, 0.1f, 20); // case 2 blocks goal temporarily
+		//mapSystem->UpdateObstacle(201, 50, 120, 0, -3, 20); // vertical blocking obstacle
 
 		float carX = 5;
 		float carY = 5;
 		mapSystem->UpdateCar(carX, carY, 0, 0);
+		float prevTime = (float)clock();
+		int msDelayForTesting = 111;
 
-		while (time < 7) {
-			float currentTime = (clock() - start) / (float)CLOCKS_PER_SEC;
+		while (time < 6) {
+			float prevTime = (clock() - start) / (float)CLOCKS_PER_SEC;
 			cout << endl;
-			int msDelayForTesting = 110;
-			this_thread::sleep_for(chrono::milliseconds(msDelayForTesting)); // add artifical delay for testing
 
 			pair<float, float> waypoint = mapSystem->GetNextWaypoint();
 			mapSystem->DebugPrint();
 
-			float apparentSpeedX = (waypoint.first - carX) / msDelayForTesting * 1000.0f;
-			float apparentSpeedY = (waypoint.second - carY) / msDelayForTesting * 1000.0f;
+			float currentTime = (clock() - start) / (float)CLOCKS_PER_SEC;
+			float deltaT = currentTime - prevTime;
+			//cout << "Delta time: " << deltaT << endl;
+			//cout << "Way point: " << waypoint.first << ", " << waypoint.second << endl;
+			float apparentSpeedX = (waypoint.first - carX) / 100.0f / deltaT;
+			float apparentSpeedY = (waypoint.second - carY) / 100.0f / deltaT;
 			// assume the car arrives at the exact point specified (for this test)
-			float carNewX = waypoint.first;
-			float carNewY = waypoint.second;
-			mapSystem->UpdateCar(carNewX, carNewY, apparentSpeedX, apparentSpeedY);
+			carX = waypoint.first;
+			carY = waypoint.second;
+			cout << endl << "Car speed: " << sqrt(apparentSpeedX*apparentSpeedX + apparentSpeedY*apparentSpeedY) << endl;
+			mapSystem->UpdateCar(carX, carY, apparentSpeedX, apparentSpeedY);
+			this_thread::sleep_for(chrono::milliseconds(msDelayForTesting)); // add artifical delay for testing
 
 			// update obstacles at some point
 
@@ -85,10 +95,6 @@ int main() {
 		cout << endl << "restart? " << endl;
 		cin >> pause;
 		delete mapSystem;
-
-		//temp->ClearObstacles();
-		//setup1(temp);
-
 
 		start = clock();
 		time = 0;

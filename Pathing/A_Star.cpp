@@ -61,7 +61,7 @@ bool A_Star::FindPath(TreadmillMap* map2d) {
 			output.solutionDistance = distance;
 			output.solutionTime = duration;
 			output.widthResolution = map2d->GetMapWidthNodes();*/
-			return true;
+			return current == map2d->GetGoal();
 
 			//break;
 		}

@@ -41,7 +41,7 @@ private:
 	float CalcDist(float x1, float x2, float y1, float y2);
 	float CalcGradientObsHeight(float distance, float radius, float padding);
 	Node* CalcNodeFromCoordinate(float x, float y);
-	vector<Node*> CalcNewObjectArea(MobileObstacle obj);
+	vector<Node*> CalcNewObjectArea(MobileObstacle obj, float paddingCm);
 
 public:
 	// new constructor for a custom map size that fits the treadmill
@@ -56,6 +56,7 @@ public:
 	float CalcNodeWidthCm();
 
 	void AddObstacle(MobileObstacle* obj);
+	deque<MobileObstacle*> GetObstacleList();
 	int GetObstacleCount();
 	void ClearObstacles();
 	void ClearProjection();

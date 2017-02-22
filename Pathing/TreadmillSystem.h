@@ -16,6 +16,7 @@ class TreadmillSystem {
 private:
 	TreadmillMap* map;
 	clock_t initTime;
+	float prevTime;
 
 	float CurrentTime();
 

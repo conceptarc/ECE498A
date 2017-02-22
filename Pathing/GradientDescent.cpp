@@ -20,27 +20,14 @@ void GradientDescent::FindPath(TreadmillMap* map) {
 		}
 	}
 	double duration = (clock() - timer) / (double)CLOCKS_PER_SEC;
-	/*output.algorithmName = "Gradient Descent";
-	output.solutionTime = duration;
-	output.hasSolution = current == map->GetGoal();*/
 
-	float distance = 0;
+	// store path into the map
 	pathList[0]->SetPath(true);
 	for (int i = 1; i < pathList.size(); i++) {
 		pathList[i]->SetPath(true);
-		float tempDist = 100.0f / map->GetResolution();
-		if (pathList[i]->GetDiagonals().count(pathList[i - 1]) != 0)
-			tempDist = sqrtf(2 * tempDist*tempDist);
-		distance += tempDist;
+		cout << pathList[i]->GetID() << endl;
+		map->PathNodeList.push_back(pathList[i]);
 	}
-
-	//output.solutionDistance = distance;
-	//output.nodesVisited = (int)pathList.size();
-	//output.widthResolution = map->GetResolution();
-	//output.nodesTotal = map->GetResolution() * map->GetResolution();
-	//output.percentVisited = output.nodesVisited / ((double)output.nodesTotal);
-
-	//return output;
 }
 
 Node* GradientDescent::NextNode(vector<Node*> neighbours) {

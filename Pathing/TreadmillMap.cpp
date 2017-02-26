@@ -358,7 +358,7 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 		collider->ProjectionArea.clear();*/
 
 		// project this collider on to the centre point
-		MobileObstacle projection = MobileObstacle(0, centrePoint->X, centrePoint->Y, 0, 0, collider->Radius + 1/* + 0.5/GetResolution()*/); // +1 node to the radius
+		MobileObstacle projection = MobileObstacle(0, centrePoint->X, centrePoint->Y, 0, 0, collider->Radius/* + 0.5/GetResolution()*/); // +1 node to the radius
 		//cout << projection.X << ", " << projection.Y << endl;
 		vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 0);
 

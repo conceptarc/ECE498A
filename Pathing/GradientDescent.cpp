@@ -2,10 +2,7 @@
 #include "GradientDescent.h"
 
 void GradientDescent::FindPath(TreadmillMap* map) {
-	//TestResult output;
-	clock_t timer = clock(); // optional
-
-							 // this is actually just hill climbing algorithm
+	// this is actually just hill climbing algorithm
 	deque<Node*> pathList;
 	unordered_set<int> visitedList;
 
@@ -19,7 +16,6 @@ void GradientDescent::FindPath(TreadmillMap* map) {
 			pathList.push_back(current); // breaks immediately after
 		}
 	}
-	double duration = (clock() - timer) / (double)CLOCKS_PER_SEC;
 
 	// store path into the map
 	pathList[0]->SetPath(true);

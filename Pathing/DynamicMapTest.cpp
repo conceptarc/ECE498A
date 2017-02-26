@@ -9,6 +9,7 @@
 #include <math.h>
 
 using namespace std;
+using namespace std::chrono;
 
 #define nullptr 0
 //#define PI 3.14159f
@@ -29,33 +30,33 @@ void setup1(TreadmillMap* currentMap) {
 
 int main() {
 	char pause; // for final key input
-	clock_t start = clock();
-	float time = (clock() - start) / (float)CLOCKS_PER_SEC;
 
 	while (true) {
+		high_resolution_clock::time_point startTime = high_resolution_clock::now();
+		float time = 0;
 
 		TreadmillSystem* mapSystem = new TreadmillSystem();
-		mapSystem->SetTreadmillDimensions(100, 150, 0.2f);
+		mapSystem->SetTreadmillDimensions(100, 150, 0.15f);
 		mapSystem->SetGoal(50, 110);
-		mapSystem->UpdateObstacle(10, 25, 55, 0, 0, 15); // test stationary obstacle
+		mapSystem->UpdateObstacle(10, 25, 55, 0, 0, 25); // test stationary obstacle
 		//mapSystem->UpdateObstacle(101, 64, 45, -5, 5, 10); // test mobile obstacle
-		mapSystem->UpdateObstacle(102, 80, 100, -1.5, 0.1f, 20); // case 2 blocks goal temporarily
+		//mapSystem->UpdateObstacle(102, 80, 100, -1.5, 0.1f, 20); // case 2 blocks goal temporarily
 		//mapSystem->UpdateObstacle(201, 50, 120, 0, -3, 20); // vertical blocking obstacle
 
 		float carX = 5;
 		float carY = 5;
 		mapSystem->UpdateCar(carX, carY, 0, 0);
-		float prevTime = (float)clock();
+		//chrono::high_resolution_clock::time_point prevTime = chrono::high_resolution_clock::now();
 		int msDelayForTesting = 111;
+		float prevTime = 0;
 
 		while (time < 6) {
-			float prevTime = (clock() - start) / (float)CLOCKS_PER_SEC;
 			cout << endl;
 
 			pair<float, float> waypoint = mapSystem->GetNextWaypoint();
 			mapSystem->DebugPrint();
 
-			float currentTime = (clock() - start) / (float)CLOCKS_PER_SEC;
+			float currentTime = duration_cast<duration<float>>(high_resolution_clock::now() - startTime).count();
 			float deltaT = currentTime - prevTime;
 			//cout << "Delta time: " << deltaT << endl;
 			//cout << "Way point: " << waypoint.first << ", " << waypoint.second << endl;
@@ -68,36 +69,15 @@ int main() {
 			mapSystem->UpdateCar(carX, carY, apparentSpeedX, apparentSpeedY);
 			this_thread::sleep_for(chrono::milliseconds(msDelayForTesting)); // add artifical delay for testing
 
-			// update obstacles at some point
-
-			/*
-			// check N times for collision (N = number of obstacles) and recalc the path up to N-1 times
-			int recalculateCount = 0;
-
-			TestResult debug = A_Star::FindPath(temp);
-			bool hasCollision = temp->UpdateCurrentLocation(deltaTime, currentTime);
-			while (++recalculateCount < temp->GetObstacleCount() && hasCollision) {
-				//temp->Print();
-				temp->ClearPath();
-				debug = A_Star::FindPath(temp);
-				hasCollision = temp->UpdateCurrentLocation(deltaTime, currentTime);
-			}
-			//temp->ClearProjection();
-			*/
-			time = currentTime;
-			//cout << currentTime/*debug.solutionTime*/ << endl;
-			//temp->Print();
-			//temp->ClearPath();
-
+			// "prevTime" with respect to the next iteration
+			prevTime = duration_cast<duration<float>>(high_resolution_clock::now() - startTime).count();
+			time = prevTime;
 		}
 
 		//temp->Print();
 		cout << endl << "restart? " << endl;
 		cin >> pause;
 		delete mapSystem;
-
-		start = clock();
-		time = 0;
 	}
 
 

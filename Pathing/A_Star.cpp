@@ -2,8 +2,6 @@
 #include "A_Star.h"
 
 bool A_Star::FindPath(TreadmillMap* map2d) {
-	clock_t timer = clock(); // optional
-
 	unordered_set<Node*> openList; // note that costList makes this redundant
 	unordered_set<Node*> closedList;
 	unordered_map<Node*, Node*> parentList;
@@ -32,8 +30,6 @@ bool A_Star::FindPath(TreadmillMap* map2d) {
 		if (current == nullptr || current == map2d->GetGoal()) {
 			if (current == nullptr)
 				current = currentBest;
-
-			double duration = (clock() - timer) / (double)CLOCKS_PER_SEC; // for debugging
 
 			// print the final path and distance
 			deque<Node*> finalPath = GetPath(parentList, current);

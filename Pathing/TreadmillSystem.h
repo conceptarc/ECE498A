@@ -7,6 +7,7 @@
 #include "GradientDescent.h"
 
 using namespace std;
+using namespace std::chrono;
 
 // The purpose of this class is to combine the functionality of TreadmillMap
 // with the two pathing algorithms: A* and Gradient. This will be the main
@@ -15,7 +16,7 @@ class TreadmillSystem {
 
 private:
 	TreadmillMap* map;
-	clock_t initTime;
+	high_resolution_clock::time_point initTime;
 	float prevTime;
 
 	float CurrentTime();

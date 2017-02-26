@@ -2,15 +2,16 @@
 #include "TreadmillSystem.h"
 
 using namespace std;
+using namespace std::chrono;
 
 float TreadmillSystem::CurrentTime()
 {
-	return (clock() - initTime) / (float)CLOCKS_PER_SEC;
+	return duration_cast<duration<float>>(high_resolution_clock::now() - initTime).count();;
 }
 
 TreadmillSystem::TreadmillSystem() {
 	map = NULL;
-	initTime = clock();
+	initTime = high_resolution_clock::now();
 	prevTime = 0;
 }
 

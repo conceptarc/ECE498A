@@ -15,8 +15,10 @@ int main() {
 	printf("noise_f, input_avg_power, output_avg_power, Db\r\n");
 	for (float noiseFreq = 0; noiseFreq <= noiseFrequencyLimit + 0.1; noiseFreq += 0.1f) {
 		Buffer_Wrapper buffer = Buffer_Wrapper();
-		float avgPowerX = 0;
-		float avgPowerXb = 0;
+		float peakX = 0;
+		float peakXb = 0;
+		/*float avgPowerX = 0;
+		float avgPowerXb = 0;*/
 
 		// only test X component - sufficient
 		for (int i = 0; i < testSecondsLimit * SAMPLE_RATE; i++) {
@@ -33,16 +35,18 @@ int main() {
 
 			buffer.Update_Object(id, xInput, 0, t);
 			buffer.Get_Object_Properties(id, xBuffer, yBuffer, dxBuffer, dyBuffer);
-			avgPowerX += xInput*xInput/2;
-			avgPowerXb += xBuffer*xBuffer/2;
+			if (abs(xInput) > peakX) peakX = abs(xInput);
+			if (abs(xBuffer) > peakXb) peakXb = abs(xBuffer);
+			/*avgPowerX += xInput*xInput/2;
+			avgPowerXb += xBuffer*xBuffer/2;*/
 		}
-		avgPowerX = avgPowerX / (float)(testSecondsLimit * SAMPLE_RATE);
-		avgPowerXb = avgPowerXb / (float)(testSecondsLimit * SAMPLE_RATE);
-		float db = 20 * log10(avgPowerXb / avgPowerX);
+		//avgPowerX = avgPowerX / (float)(testSecondsLimit * SAMPLE_RATE);
+		//avgPowerXb = avgPowerXb / (float)(testSecondsLimit * SAMPLE_RATE);
+		float db = 20 * log10(peakXb / peakX);
 
 		// notice the aliasing effect after 15 Hz due to 30 Hz sampling rate
 		//printf("noise_f = %5.2f, input_avg = %2.4f, output_avg = %2.4f, Db = %6.2f \r\n", noiseFreq, avgX, avgXb, db);
-		printf("%.1f,%.4f,%.4f,%.4f\r\n", noiseFreq, avgPowerX, avgPowerXb, db);
+		printf("%.1f,%.4f\r\n", noiseFreq, db);
 		//printf("\r\n");
 	}
 

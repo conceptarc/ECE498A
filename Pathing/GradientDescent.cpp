@@ -1,4 +1,5 @@
 #pragma once
+#include <cfloat>
 #include "GradientDescent.h"
 
 void GradientDescent::FindPath(TreadmillMap* map) {
@@ -29,7 +30,8 @@ void GradientDescent::FindPath(TreadmillMap* map) {
 Node* GradientDescent::NextNode(vector<Node*> neighbours) {
 	float cost = FLT_MAX;
 	Node* selection = nullptr;
-	for each (Node* neighbour in neighbours) {
+	for (int i = 0; i < neighbours.size(); i++) {
+		Node* neighbour = neighbours[i];
 		if (neighbour->GetHeuristicDist() < cost) {
 			cost = neighbour->GetHeuristicDist();
 			selection = neighbour;

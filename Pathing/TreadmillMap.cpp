@@ -1,4 +1,5 @@
 #pragma once
+#include <cfloat>
 #include "TreadmillMap.h"
 
 using namespace std;
@@ -19,6 +20,13 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor) : _res
 	GOAL_Y = 0.0f;
 	PADDING = 5; // n cm away from radius of obstacle
 
+
+	// init _thisCar
+	_thisCar = new MobileObstacle(0, 0, -1, 0, 0, 0);
+	_start = NULL;
+	_goal = NULL;
+	
+	
 	// generate a fixed map with variable resolution
 	// create 2D array of pointers
 	map2d = new Node**[MAP_LENGTH_NODES]; // rows
@@ -61,38 +69,8 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor) : _res
 			float y = nodeWidth * (MAP_LENGTH_NODES - i - 1) + nodeWidth / 2;
 			node->X = x;
 			node->Y = y; // added for dynamic maps/obstacles
-
-			/*
-			float distToStart = CalcDist(x, START_X, y, START_Y, false);
-			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y, false); // true means use Manhattan
-			node->SetHeuristic(distToGoal); // calculated above, might as well use it
-
-			// address the existing obstacles
-			for (int i = 0; i < obsList.size(); i++) {
-				Obstacle obs = obsList[i];
-				if (option == MapGridOption::GridGradient) {
-					float distance = CalcDist(x, obs.X, y, obs.Y, false);
-					if (distance <= obs.Radius + PADDING) {
-						node->SetHeuristic(powf(node->GetHeuristicDist(), 2) + CalcGradientObsHeight(distance, obs.Radius, PADDING));
-						if (distance <= obs.Radius) {
-							node->IsObjectPresent = true;//node->SetOccupied(true);
-							node->SetHeuristic(FLT_MAX); // arbitrarly / sufficiently high
-							break;
-						}
-					}
-				}
-				else {
-					if (powf(x - obs.X, 2) + powf(y - obs.Y, 2) < powf(obs.Radius, 2)) {
-						node->IsObjectPresent = true; //node->SetOccupied(true);
-						break;
-					}
-				}
-			}*/
 		}
 	}
-
-	// init _thisCar
-	_thisCar = new MobileObstacle(0, 0, -1, 0, 0, 0);
 }
 
 TreadmillMap::~TreadmillMap() {
@@ -198,11 +176,13 @@ void TreadmillMap::SetGoal(float x, float y) {
 	Node* target = CalcNodeFromCoordinate(x, y);
 	GOAL_X = target->X;
 	GOAL_Y = target->Y;
-	if (_goal != NULL)
+	if (_goal != NULL) {
 		_goal->SetGoal(false);
+	}
 	_goal = target;
+	//printf("TreadmillMap.cpp - Set goal to Node ID: %d\n", _goal->GetID());
 	_goal->SetGoal(true);
-
+	
 	// whenever the goal is moved, the map weighting must be recalculated
 	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
 		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
@@ -464,7 +444,7 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindCollisionPoint(float currentTime
 			for (int k = 0; k < newArea.size(); k++) {
 				Node* node = newArea[k];
 				if (node == previous) { // collision detected
-					cout << "Obstacle " << obj->Id << " has projection expiry t=" << currentTime + time << endl;
+					//cout << "Obstacle " << obj->Id << " has projection expiry t=" << currentTime + time << endl;
 					obj->SetExpiryTime(currentTime + time + 0.5f); // plus 0.5 second delay
 
 					/*cout << "predicted path node index: " << i << endl;

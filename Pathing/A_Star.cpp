@@ -1,4 +1,5 @@
 #pragma once
+#include <cfloat>
 #include "A_Star.h"
 
 bool A_Star::FindPath(TreadmillMap* map2d) {

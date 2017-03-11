@@ -2,6 +2,26 @@
 #include "Node.h"
 
 Node::Node() {
+	_id = 0;
+	_isPath = false;
+	_isVisited = false;
+	_isOccupied = false;
+	_isStart = false;
+	_isGoal = false;
+	_heuristicDist = 0;
+	_north = NULL;
+	_east = NULL;
+	_south = NULL;
+	_west = NULL;
+	_northEast = NULL;
+	_northWest = NULL;
+	_southEast = NULL;
+	_southWest = NULL;
+	
+	IsObjectPresent = false;
+	IsOccupationPredicted = false;
+	X = 0;
+	Y = 0;
 }
 
 Node::~Node() {

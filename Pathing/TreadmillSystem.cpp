@@ -62,7 +62,15 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 	prevTime = timeSnapshot;
 
 	map->ClearPath(); // only clear the path just before recalculation
-	if (A_Star::FindPath(map) && map->PathNodeList.size() > 1) {
+	bool aStarSuccess = A_Star::FindPath(map);
+	// Due to the (lack of) sensitivity of the car controller, if a given waypoint is
+	// too near the current car location, the car simply does not move. Therefore
+	// we should pass a waypoint that is 2 nodes distance away.
+	if (aStarSuccess && map->PathNodeList.size() > 2) {
+		nextX = map->PathNodeList[2]->X;
+		nextY = map->PathNodeList[2]->Y;
+		cout << "A* has found a path." << endl;
+	} else if (aStarSuccess && map->PathNodeList.size() > 1) {
 		nextX = map->PathNodeList[1]->X;
 		nextY = map->PathNodeList[1]->Y;
 		cout << "A* has found a path." << endl;
@@ -99,6 +107,7 @@ void TreadmillSystem::UpdateObstacle(int id, float x, float y, float dx, float d
 
 	// otherwise add this new obstacle
 	if (!foundObstacle) {
+		printf("new obstacle ID: %d\n", id);
 		MobileObstacle* additionalObstacle = new MobileObstacle(id, x, y, dx, dy, radius);
 		map->AddObstacle(additionalObstacle);
 	}

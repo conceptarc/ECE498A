@@ -57,6 +57,7 @@ public:
 
 	void AddObstacle(MobileObstacle* obj);
 	deque<MobileObstacle*> GetObstacleList();
+	void ReplaceObstacleList(deque<MobileObstacle*> obsList);
 	int GetObstacleCount();
 	void ClearObstacles();
 	void ClearProjection();

@@ -113,6 +113,27 @@ void TreadmillSystem::UpdateObstacle(int id, float x, float y, float dx, float d
 	}
 }
 
+void TreadmillSystem::RemoveObstaclesExcept(vector<int> idList)
+{
+	deque<MobileObstacle*> existingObstacles = map->GetObstacleList();
+	
+	// create a new deque and replace the old one with the new one
+	deque<MobileObstacle*> newObstacleSet;
+
+	for (int i = 0; i < existingObstacles.size(); i++) {
+
+		// check for ID match and then populate the new collection
+		for (int j = 0; j < idList.size(); j++) {
+			if (existingObstacles[i]->Id == idList[j]) {
+				newObstacleSet.push_back(existingObstacles[i]);
+				break;
+			}
+		}
+	}
+
+	map->ReplaceObstacleList(newObstacleSet);
+}
+
 void TreadmillSystem::DebugPrint()
 {
 	map->Print();

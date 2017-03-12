@@ -118,6 +118,25 @@ deque<MobileObstacle*> TreadmillMap::GetObstacleList()
 	return _obstacleList;
 }
 
+void TreadmillMap::ReplaceObstacleList(deque<MobileObstacle*> obsList) {
+	for (int i = 0; i < _obstacleList.size(); i++) {
+		bool hasFound = false;
+		for (int j = 0; j < obsList.size(); j++) {
+			if (_obstacleList[i]->Id == obsList[j]->Id) {
+				hasFound = true;
+				break;
+			}
+		}
+		
+		// clear the node state
+		if (!hasFound) {
+			delete _obstacleList[i];
+		}
+	}
+	
+	_obstacleList = obsList;
+}
+
 int TreadmillMap::GetObstacleCount()
 {
 	return (int)_obstacleList.size();
@@ -125,13 +144,7 @@ int TreadmillMap::GetObstacleCount()
 
 void TreadmillMap::ClearObstacles() {
 	for (int i = 0; i < _obstacleList.size(); i++) {
-		MobileObstacle* obj = _obstacleList[i];
-		for (int j = 0; j < obj->ActualArea.size(); j++) {
-			obj->ActualArea[j]->IsObjectPresent = false;
-		}
-		obj->ClearProjection();
-
-		delete obj;
+		delete _obstacleList[i];
 	}
 	_obstacleList.clear();
 }
@@ -139,11 +152,7 @@ void TreadmillMap::ClearObstacles() {
 void TreadmillMap::ClearProjection()
 {
 	for (int i = 0; i < _obstacleList.size(); i++) {
-		MobileObstacle* obj = _obstacleList[i];
-		for (int j = 0; j < obj->ProjectionArea.size(); j++) {
-			obj->ProjectionArea[j]->IsOccupationPredicted = false;
-		}
-		obj->ProjectionArea.clear();
+		_obstacleList[i]->ClearProjection();
 	}
 }
 

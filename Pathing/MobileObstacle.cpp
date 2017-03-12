@@ -13,6 +13,10 @@ MobileObstacle::MobileObstacle(int id, float x, float y, float dx, float dy, flo
 
 MobileObstacle::~MobileObstacle() {
 	// do not delete the map Nodes!
+	for (int j = 0; j < ActualArea.size(); j++) {
+		ActualArea[j]->IsObjectPresent = false;
+	}
+	ClearProjection();
 }
 
 void MobileObstacle::Move(float deltaTime, float globalTime) {

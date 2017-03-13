@@ -74,6 +74,6 @@ public:
 	void UpdateMobileObstacles(float deltaTime, float currentTime); // moving obstacles without generating the path
 	deque<Node*> PathNodeList;
 	void ClearPath();
-	bool UpdateCurrentLocation(float deltaTime, float currentTime); // update the start location, returns true if collision detected
-	tuple<Node*, MobileObstacle*> FindCollisionPoint(float currentTime); // costly to check + simulate the future collisions
+	//bool UpdateCurrentLocation(float deltaTime, float currentTime); // update the start location, returns true if collision detected
+	tuple<Node*, MobileObstacle*> FindNextCollisionPoint(float currentTime, MobileObstacle* obstacle);
 };

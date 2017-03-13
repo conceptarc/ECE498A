@@ -1,5 +1,6 @@
 #pragma once
 #include "MobileObstacle.h"
+#include <iostream>
 
 MobileObstacle::MobileObstacle() : Obstacle(0, 0, 0, 0) {
 	// current deque is blank
@@ -16,7 +17,7 @@ MobileObstacle::~MobileObstacle() {
 	for (int j = 0; j < ActualArea.size(); j++) {
 		ActualArea[j]->IsObjectPresent = false;
 	}
-	ClearProjection();
+	//ClearProjection();
 }
 
 void MobileObstacle::Move(float deltaTime, float globalTime) {
@@ -24,7 +25,9 @@ void MobileObstacle::Move(float deltaTime, float globalTime) {
 	Y = Y + dY * deltaTime;
 
 	if (ExpiryTime > -1 && ExpiryTime < globalTime) {
+		cout << "Projection of Obst " << Id << " has expired.\r\n";
 		ClearProjection();
+		ExpiryTime = -1;
 	}
 }
 

@@ -276,7 +276,7 @@ vector<Node*> TreadmillMap::CalcNewObjectArea(MobileObstacle obj, float paddingC
 }
 
 void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
-	// does not work for gradient descent!
+	// does not work for gradient descent! // yet
 
 	deque<MobileObstacle*> outOfBoundsList;
 
@@ -296,6 +296,7 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 
 		// move the object
 		obj->Move(deltaTime, currentTime);
+		// cout << "deltaT: " << deltaTime << endl;
 		vector<Node*> newArea = CalcNewObjectArea(*obj, PADDING); // also contains nodes surrounding the obstacle
 
 		// apply changes to the map
@@ -334,30 +335,25 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 		}
 	}
 
-	// perform collision prediction
-	tuple<Node*, MobileObstacle*> result = FindCollisionPoint(currentTime);
-	Node* centrePoint = get<0>(result);
-	MobileObstacle* collider = get<1>(result);
+	// perform collision prediction // do it once per obstacle
+	for (int i = 0; i < _obstacleList.size(); i++) {
+		tuple<Node*, MobileObstacle*> result = FindNextCollisionPoint(currentTime, _obstacleList[i]);
+		Node* centrePoint = get<0>(result);
+		MobileObstacle* collider = get<1>(result);
 
-	if (centrePoint != nullptr && collider != nullptr) {
-		// if there is already a projection for this obstacle, clear it as it is no longer valid (should only be one)
-		/*for (int j = 0; j < collider->ProjectionArea.size(); j++) {
-			collider->ProjectionArea[j]->IsOccupationPredicted = false;
+		if (centrePoint != nullptr && collider != nullptr) {
+			// project this collider on to the centre point
+			MobileObstacle projection = MobileObstacle(0, centrePoint->X, centrePoint->Y, 0, 0, collider->Radius);
+			// pad by 5 cm
+			vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 3);
+
+			//cout << newProjectionArea.size() << endl;
+			for (int i = 0; i < newProjectionArea.size(); i++) {
+				Node* node = newProjectionArea[i];
+				node->IsOccupationPredicted = true; // node->SetOccupied(true);
+				collider->ProjectionArea.push_back(node);
+			}
 		}
-		collider->ProjectionArea.clear();*/
-
-		// project this collider on to the centre point
-		MobileObstacle projection = MobileObstacle(0, centrePoint->X, centrePoint->Y, 0, 0, collider->Radius/* + 0.5/GetResolution()*/); // +1 node to the radius
-		//cout << projection.X << ", " << projection.Y << endl;
-		vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 0);
-
-		//cout << newProjectionArea.size() << endl;
-		for (int i = 0; i < newProjectionArea.size(); i++) {
-			Node* node = newProjectionArea[i];
-			node->IsOccupationPredicted = true; // node->SetOccupied(true);
-			collider->ProjectionArea.push_back(node);
-		}
-		//return true; // this causes the path to be recalculated immediately
 	}
 }
 
@@ -369,71 +365,72 @@ void TreadmillMap::ClearPath() {
 }
 
 // deprecated
-bool TreadmillMap::UpdateCurrentLocation(float deltaTime, float currentTime) {
-	if (PathNodeList.size() == 0) return false;
-
-	Node* nextNode = PathNodeList.size() > 1 ? PathNodeList[1] : PathNodeList[0];
-	//cout << "Next car waypoint = {" << nextNode->X << ", " << nextNode->Y << "}" << endl;
-
-	/*_thisCar->Heading = atan2f(nextNode->Y - _thisCar->Y, nextNode->X - _thisCar->X);
-	//cout << "Heading = " << _thisCar->Heading << endl;
-
-	float distance = _thisCar->Velocity * deltaTime;
-	float deltaX = distance * cosf(_thisCar->Heading);
-	float deltaY = distance * sinf(_thisCar->Heading);
-
-	_thisCar->X += deltaX;
-	_thisCar->Y += deltaY;*/
-
-	// update the path list
-	// find the closest node in the path
-	int cutoffIndex = 0;
-	float distToCar = (float)MAP_LENGTH_CM * 2; // arbitrary long distance (upper bound of search)
-	for (int i = 0; i < PathNodeList.size() - 1; i++) {
-		Node* current = PathNodeList[i];
-		float distToNode = CalcDist(current->X, _thisCar->X, current->Y, _thisCar->Y);
-		if (distToNode < distToCar) {
-			distToCar = distToNode;
-			cutoffIndex = i;
-		}
-	}
-	// set new start point for the next iteration of the search
-
-	for (int i = 0; i < cutoffIndex; i++) {
-		Node* current = PathNodeList[i];
-		current->SetPath(false);
-	}
-	//cout << "cutoff: " << cutoffIndex << endl;
-	_start->SetPath(false);
-	_start->SetStart(false);
-	_start = PathNodeList[cutoffIndex];
-	_start->SetStart(true);
-
-	// initialize and update collision prediction
-	tuple<Node*, MobileObstacle*> result = FindCollisionPoint(currentTime);
-	Node* centrePoint = get<0>(result);
-	MobileObstacle* collider = get<1>(result);
-
-	if (centrePoint != nullptr && collider != nullptr) {
-		// project this collider on to the centre point
-		MobileObstacle projection = MobileObstacle(0, 0, 0, centrePoint->X, centrePoint->Y, collider->Radius/* + 0.5/GetResolution()*/); // +1 node to the radius
-		cout << projection.X << ", " << projection.Y << endl;
-		vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 0);
-
-		cout << newProjectionArea.size() << endl;
-		for (int i = 0; i < newProjectionArea.size(); i++) {
-			Node* node = newProjectionArea[i];
-			node->IsOccupationPredicted = true; // node->SetOccupied(true);
-			collider->ProjectionArea.push_back(node);
-		}
-		return true; // this causes the path to be recalculated immediately
-	}
-	return false;
-}
+//bool TreadmillMap::UpdateCurrentLocation(float deltaTime, float currentTime) {
+//	return false;
+//	if (PathNodeList.size() == 0) return false;
+//
+//	Node* nextNode = PathNodeList.size() > 1 ? PathNodeList[1] : PathNodeList[0];
+//	//cout << "Next car waypoint = {" << nextNode->X << ", " << nextNode->Y << "}" << endl;
+//
+//	/*_thisCar->Heading = atan2f(nextNode->Y - _thisCar->Y, nextNode->X - _thisCar->X);
+//	//cout << "Heading = " << _thisCar->Heading << endl;
+//
+//	float distance = _thisCar->Velocity * deltaTime;
+//	float deltaX = distance * cosf(_thisCar->Heading);
+//	float deltaY = distance * sinf(_thisCar->Heading);
+//
+//	_thisCar->X += deltaX;
+//	_thisCar->Y += deltaY;*/
+//
+//	// update the path list
+//	// find the closest node in the path
+//	int cutoffIndex = 0;
+//	float distToCar = (float)MAP_LENGTH_CM * 2; // arbitrary long distance (upper bound of search)
+//	for (int i = 0; i < PathNodeList.size() - 1; i++) {
+//		Node* current = PathNodeList[i];
+//		float distToNode = CalcDist(current->X, _thisCar->X, current->Y, _thisCar->Y);
+//		if (distToNode < distToCar) {
+//			distToCar = distToNode;
+//			cutoffIndex = i;
+//		}
+//	}
+//	// set new start point for the next iteration of the search
+//
+//	for (int i = 0; i < cutoffIndex; i++) {
+//		Node* current = PathNodeList[i];
+//		current->SetPath(false);
+//	}
+//	//cout << "cutoff: " << cutoffIndex << endl;
+//	_start->SetPath(false);
+//	_start->SetStart(false);
+//	_start = PathNodeList[cutoffIndex];
+//	_start->SetStart(true);
+//
+//	// initialize and update collision prediction
+//	tuple<Node*, MobileObstacle*> result = FindCollisionPoint(currentTime);
+//	Node* centrePoint = get<0>(result);
+//	MobileObstacle* collider = get<1>(result);
+//
+//	if (centrePoint != nullptr && collider != nullptr) {
+//		// project this collider on to the centre point
+//		MobileObstacle projection = MobileObstacle(0, 0, 0, centrePoint->X, centrePoint->Y, collider->Radius/* + 0.5/GetResolution()*/); // +1 node to the radius
+//		cout << projection.X << ", " << projection.Y << endl;
+//		vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 0);
+//
+//		cout << newProjectionArea.size() << endl;
+//		for (int i = 0; i < newProjectionArea.size(); i++) {
+//			Node* node = newProjectionArea[i];
+//			node->IsOccupationPredicted = true; // node->SetOccupied(true);
+//			collider->ProjectionArea.push_back(node);
+//		}
+//		return true; // this causes the path to be recalculated immediately
+//	}
+//	return false;
+//}
 
 // the purpose of this method is to simulate future collision points
 // on the current path and return the point of collision
-tuple<Node*, MobileObstacle*> TreadmillMap::FindCollisionPoint(float currentTime) {
+tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float currentTime, MobileObstacle* obst) {
 	if (PathNodeList.size() == 0) return tuple<Node*, MobileObstacle*>(nullptr, nullptr);
 
 	float totalDist = 0;
@@ -442,28 +439,32 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindCollisionPoint(float currentTime
 		Node* previous = PathNodeList[i - 1];
 		totalDist += CalcDist(current->X, previous->X, current->Y, previous->Y);
 		float speed = CalcDist(_thisCar->dX, 0, _thisCar->dY, 0); // reusing this equation
-		float time = totalDist / 100.0f / speed; // distance is in cm so divide by 100
+		//cout << "p Speed: " << speed << endl;
+		//cout << "p Dist: " << totalDist << endl;
 
-		for (int j = 0; j < _obstacleList.size(); j++) {
-			MobileObstacle* obj = _obstacleList[j];
-			MobileObstacle projection = obj->SimulateMove(time);
-			vector<Node*> newArea = CalcNewObjectArea(projection, 0);
+		float time = totalDist / speed; // distance is in cm but dx and dy are also cm/s
+		//cout << "predict time: " << time << endl;
 
-			// check if any of the projected area overlaps with the car path
-			for (int k = 0; k < newArea.size(); k++) {
-				Node* node = newArea[k];
-				if (node == previous) { // collision detected
-					//cout << "Obstacle " << obj->Id << " has projection expiry t=" << currentTime + time << endl;
-					obj->SetExpiryTime(currentTime + time + 0.5f); // plus 0.5 second delay
+		//for (int j = 0; j < _obstacleList.size(); j++) {
+		//	MobileObstacle* obj = _obstacleList[j];
+		MobileObstacle projection = obst->SimulateMove(time);
+		vector<Node*> newArea = CalcNewObjectArea(projection, 0);
 
-					/*cout << "predicted path node index: " << i << endl;
-					cout << "predicted collision coord: " << projection.X << ", " << projection.Y << endl;
-					cout << "predicted collision time: " << time << endl;*/
-					Node* projectionCentre = CalcNodeFromCoordinate(projection.X, projection.Y);
-					return tuple<Node*, MobileObstacle*>(projectionCentre, obj); // only find the first collision point
-				}
+		// check if any of the projected area overlaps with the car path
+		for (int k = 0; k < newArea.size(); k++) {
+			Node* node = newArea[k];
+			if (node == previous) { // collision detected
+				//cout << "Obstacle " << obj->Id << " has projection expiry t=" << currentTime + time << endl;
+				obst->SetExpiryTime(currentTime + time + 1.0f); // linger for additional 1.0 second
+
+				//cout << "predicted path node index: " << i << endl;
+				//cout << "predicted collision coord: " << projection.X << ", " << projection.Y << endl;
+				cout << "predicted collision time: " << (currentTime + time) << endl;
+				Node* projectionCentre = CalcNodeFromCoordinate(projection.X, projection.Y);
+				return tuple<Node*, MobileObstacle*>(projectionCentre, obst); // only find the first collision point
 			}
 		}
+		//}
 	}
 
 	return tuple<Node*, MobileObstacle*>(nullptr, nullptr);

@@ -18,6 +18,8 @@ private:
 	TreadmillMap* map;
 	high_resolution_clock::time_point initTime;
 	float prevTime;
+	float prevCarTime;
+	pair<float, float> prevCarLocation;
 
 	float CurrentTime();
 
@@ -27,7 +29,7 @@ public:
 
 	void SetTreadmillDimensions(int width, int length, float resolution);
 	void SetGoal(float x, float y); // x -> width, y -> height
-	void UpdateCar(float x, float y, float dx, float dy); // dx, dy are velocity components
+	void UpdateCar(float x, float y); // auto-interpolate the velocity
 	pair<float, float> GetNextWaypoint();
 
 	void UpdateObstacle(int id, float x, float y, float dx, float dy, float radius);

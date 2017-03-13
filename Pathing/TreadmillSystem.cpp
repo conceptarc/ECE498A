@@ -6,13 +6,14 @@ using namespace std::chrono;
 
 float TreadmillSystem::CurrentTime()
 {
-	return duration_cast<duration<float>>(high_resolution_clock::now() - initTime).count();;
+	return duration_cast<duration<float>>(high_resolution_clock::now() - initTime).count();
 }
 
 TreadmillSystem::TreadmillSystem() {
 	map = NULL;
 	initTime = high_resolution_clock::now();
 	prevTime = 0;
+	prevCarTime = 0;
 }
 
 TreadmillSystem::~TreadmillSystem() {
@@ -34,13 +35,20 @@ void TreadmillSystem::SetGoal(float x, float y)
 	map->SetGoal(x, y);
 }
 
-void TreadmillSystem::UpdateCar(float x, float y, float dx, float dy)
+void TreadmillSystem::UpdateCar(float x, float y)
 {
 	MobileObstacle* car = map->GetThisCar();
+
+	// we need to estimate the average car velocity based on the last time the car was updated
+	float deltaX = x - car->X;
+	float deltaY = y - car->Y;
+	float deltaT = CurrentTime() - prevCarTime;// cout << "delta T car: " << deltaT << endl;
+	prevCarTime = CurrentTime();
+
 	car->X = x;
 	car->Y = y;
-	car->dX = dx;
-	car->dY = dy;
+	car->dX = deltaX / deltaT;// cout << "car dx: " << car->dX << endl;
+	car->dY = deltaY / deltaT;// cout << "car dy: " << car->dX << endl;
 }
 
 pair<float, float> TreadmillSystem::GetNextWaypoint()
@@ -52,31 +60,41 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 
 	// update the obstacles before calculating the path
 	float timeSnapshot = CurrentTime();
-	cout << "Time since last waypoint request: " << timeSnapshot - prevTime << endl;
+	float deltaTime = timeSnapshot - prevTime;
+	cout << "Time since last waypoint request: " << deltaTime << endl;
 	cout << "Current time: " << timeSnapshot << endl;
 	
 	// track and predict obstacles based on current information
-	map->UpdateMobileObstacles(prevTime, timeSnapshot);
+	map->UpdateMobileObstacles(deltaTime, timeSnapshot);
 	// ^ very important to do before the path is cleared
 
 	prevTime = timeSnapshot;
 
-	map->ClearPath(); // only clear the path just before recalculation
+	//if (!savePath) // save the last good path if we fail to calculate a new one
+	map->ClearPath();
+
 	bool aStarSuccess = A_Star::FindPath(map);
 	// Due to the (lack of) sensitivity of the car controller, if a given waypoint is
 	// too near the current car location, the car simply does not move. Therefore
 	// we should pass a waypoint that is 2 nodes distance away.
-	if (aStarSuccess && map->PathNodeList.size() > 2) {
+	if (aStarSuccess && map->PathNodeList.size() > 3) {
 		nextX = map->PathNodeList[2]->X;
 		nextY = map->PathNodeList[2]->Y;
 		cout << "A* has found a path." << endl;
-	} else if (aStarSuccess && map->PathNodeList.size() > 1) {
-		nextX = map->PathNodeList[1]->X;
-		nextY = map->PathNodeList[1]->Y;
-		cout << "A* has found a path." << endl;
 	} else {
+		// else the path is too short
+		// A* is not reliable in avoiding future collisions when the car is already near the destination
+
 		cout << "A* found no path, switching to gradient descent." << endl;
-		map->ClearPath();
+		// TODO: try gradient descent here
+
+
+		cout << "Prev path has size " << map->PathNodeList.size() << endl;
+		if (map->PathNodeList.size() > 2) {
+			nextX = map->PathNodeList[1]->X;
+			nextY = map->PathNodeList[1]->Y;
+		}
+		//map->ClearPath();
 		//map->ClearProjection();
 		/*// try again with GradientDescent
 		// WIP

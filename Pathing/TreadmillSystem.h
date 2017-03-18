@@ -31,7 +31,8 @@ public:
 	void SetGoal(float x, float y); // x -> width, y -> height
 	void UpdateCar(float x, float y); // auto-interpolate the velocity
 	pair<float, float> GetNextWaypoint();
-
+	
+	void UpdateOtherCar(int id, float x, float y, float timeout); // after {timeout} seconds, this car will be considered removed
 	void UpdateObstacle(int id, float x, float y, float dx, float dy, float radius);
 	void RemoveObstacle(int id);
 	void RemoveObstaclesExcept(vector<int> idList);

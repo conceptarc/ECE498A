@@ -23,11 +23,11 @@ int main() {
 
 		TreadmillSystem* mapSystem = new TreadmillSystem();
 		mapSystem->SetTreadmillDimensions(100, 150, 0.2f);
-		mapSystem->SetGoal(50, 60);
-		//mapSystem->UpdateObstacle(10, 25, 55, 0, 0, 15); // test stationary obstacle
+		mapSystem->SetGoal(50, 80);
+		//mapSystem->UpdateObstacle(10, 70, 55, 0, 0, 15); // test stationary obstacle
 		//mapSystem->UpdateObstacle(101, 64, 45, -5, 5, 10); // test mobile obstacle
 		//mapSystem->UpdateObstacle(102, 80, 100, -11.5, 0.1f, 20); // case 2 blocks goal temporarily
-		mapSystem->UpdateObstacle(201, 50, 160, 0, -30, 20); // vertical blocking obstacle
+		mapSystem->UpdateObstacle(201, 50, 110, 0, -10, 20); // vertical blocking obstacle
 
 		float carX = 5;
 		float carY = 5;

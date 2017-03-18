@@ -3,6 +3,7 @@
 #include <iostream>
 
 MobileObstacle::MobileObstacle() : Obstacle(0, 0, 0, 0) {
+	IsCar = false;
 	// current deque is blank
 }
 
@@ -10,6 +11,7 @@ MobileObstacle::MobileObstacle(int id, float x, float y, float dx, float dy, flo
 	dX(dx), dY(dy), Obstacle(id, x, y, radius) {
 	// current deque is blank
 	ExpiryTime = -1;
+	IsCar = false;
 }
 
 MobileObstacle::~MobileObstacle() {
@@ -25,9 +27,18 @@ void MobileObstacle::Move(float deltaTime, float globalTime) {
 	Y = Y + dY * deltaTime;
 
 	if (ExpiryTime > -1 && ExpiryTime < globalTime) {
-		cout << "Projection of Obst " << Id << " has expired.\r\n";
-		ClearProjection();
-		ExpiryTime = -1;
+		if (IsCar) {
+			// in this case, we just delete the whole MobileObstacle
+			// rely on the higher level to constantly increase the expiry time
+			ClearProjection();
+			ExpiryTime = -1;
+			cout << "Other car " << Id << " has expired from lack of updates.\r\n";
+		}
+		else {
+			cout << "Projection of Obst " << Id << " has expired.\r\n";
+			ClearProjection();
+			ExpiryTime = -1;
+		}
 	}
 }
 

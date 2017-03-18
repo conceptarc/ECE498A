@@ -8,21 +8,29 @@ void GradientDescent::FindPath(TreadmillMap* map) {
 	unordered_set<int> visitedList;
 
 	Node* current = map->GetStart();
-	while (visitedList.count(current->GetID()) == 0 && current != map->GetGoal()) {
+	int maxLength = 4; // should be less than A star limit of 3
+	int count = 0;
+	bool alreadyVisited = visitedList.count(current->GetID()) != 0;
+	float lowestCost = current->GetHeuristicDist();
+
+	while (pathList.size() < maxLength && count++ < maxLength) {
 		visitedList.insert(current->GetID());
-		pathList.push_back(current);
 		current = NextNode(current->GetAllAdjacent());
-		if (current == map->GetGoal()) {
-			visitedList.insert(current->GetID());
-			pathList.push_back(current); // breaks immediately after
+		if (current->GetHeuristicDist() < lowestCost) {
+			lowestCost = current->GetHeuristicDist();
+			pathList.push_back(current);
+			alreadyVisited = visitedList.count(current->GetID()) != 0;
+		}
+		else {
+			break;
 		}
 	}
 
 	// store path into the map
-	pathList[0]->SetPath(true);
-	for (int i = 1; i < pathList.size(); i++) {
+	cout << "GD path size: " << pathList.size() << endl;
+	for (int i = 0; i < pathList.size(); i++) {
 		pathList[i]->SetPath(true);
-		cout << pathList[i]->GetID() << endl;
+		// cout << pathList[i]->GetID() << endl;
 		map->PathNodeList.push_back(pathList[i]);
 	}
 }
@@ -32,8 +40,10 @@ Node* GradientDescent::NextNode(vector<Node*> neighbours) {
 	Node* selection = nullptr;
 	for (int i = 0; i < neighbours.size(); i++) {
 		Node* neighbour = neighbours[i];
+
 		if (neighbour->GetHeuristicDist() < cost) {
 			cost = neighbour->GetHeuristicDist();
+			//cout << "nearby cost: " << cost << endl;
 			selection = neighbour;
 		}
 	}

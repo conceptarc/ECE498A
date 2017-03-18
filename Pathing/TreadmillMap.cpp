@@ -283,9 +283,10 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 	// simulate/project obstacle locations
 	for (int i = 0; i < _obstacleList.size(); i++) {
 		MobileObstacle* obj = _obstacleList[i];
+		float gradientRadiusInfluencePadding = 25; // 25 cm
 
 		// before moving
-		vector<Node*> oldAreaPlusBuffer = CalcNewObjectArea(*obj, PADDING); // also contains nodes surrounding the obstacle
+		vector<Node*> oldAreaPlusBuffer = CalcNewObjectArea(*obj, PADDING + gradientRadiusInfluencePadding); // also contains nodes surrounding the obstacle
 		for (int j = 0; j < oldAreaPlusBuffer.size(); j++) {
 			CalcHeuristic(oldAreaPlusBuffer[j]); // assign this default value
 		}
@@ -297,7 +298,7 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 		// move the object
 		obj->Move(deltaTime, currentTime);
 		// cout << "deltaT: " << deltaTime << endl;
-		vector<Node*> newArea = CalcNewObjectArea(*obj, PADDING); // also contains nodes surrounding the obstacle
+		vector<Node*> newArea = CalcNewObjectArea(*obj, PADDING + gradientRadiusInfluencePadding); // also contains nodes surrounding the obstacle
 
 		// apply changes to the map
 		// add additional heuristic penalty to object surroundings
@@ -305,8 +306,8 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 			Node* node = newArea[j];
 
 			float distanceFromObstacle = CalcDist(node->X, obj->X, node->Y, obj->Y);
-			float gradientPenalty = CalcGradientObsHeight(distanceFromObstacle, obj->Radius, PADDING);
-			//cout << gradientPenalty << endl;
+			// #gradientdescent
+			float gradientPenalty = CalcGradientObsHeight(distanceFromObstacle, obj->Radius, PADDING + gradientRadiusInfluencePadding);
 
 			node->SetHeuristic(node->GetHeuristicDist() + gradientPenalty);
 
@@ -364,70 +365,6 @@ void TreadmillMap::ClearPath() {
 	PathNodeList.clear();
 }
 
-// deprecated
-//bool TreadmillMap::UpdateCurrentLocation(float deltaTime, float currentTime) {
-//	return false;
-//	if (PathNodeList.size() == 0) return false;
-//
-//	Node* nextNode = PathNodeList.size() > 1 ? PathNodeList[1] : PathNodeList[0];
-//	//cout << "Next car waypoint = {" << nextNode->X << ", " << nextNode->Y << "}" << endl;
-//
-//	/*_thisCar->Heading = atan2f(nextNode->Y - _thisCar->Y, nextNode->X - _thisCar->X);
-//	//cout << "Heading = " << _thisCar->Heading << endl;
-//
-//	float distance = _thisCar->Velocity * deltaTime;
-//	float deltaX = distance * cosf(_thisCar->Heading);
-//	float deltaY = distance * sinf(_thisCar->Heading);
-//
-//	_thisCar->X += deltaX;
-//	_thisCar->Y += deltaY;*/
-//
-//	// update the path list
-//	// find the closest node in the path
-//	int cutoffIndex = 0;
-//	float distToCar = (float)MAP_LENGTH_CM * 2; // arbitrary long distance (upper bound of search)
-//	for (int i = 0; i < PathNodeList.size() - 1; i++) {
-//		Node* current = PathNodeList[i];
-//		float distToNode = CalcDist(current->X, _thisCar->X, current->Y, _thisCar->Y);
-//		if (distToNode < distToCar) {
-//			distToCar = distToNode;
-//			cutoffIndex = i;
-//		}
-//	}
-//	// set new start point for the next iteration of the search
-//
-//	for (int i = 0; i < cutoffIndex; i++) {
-//		Node* current = PathNodeList[i];
-//		current->SetPath(false);
-//	}
-//	//cout << "cutoff: " << cutoffIndex << endl;
-//	_start->SetPath(false);
-//	_start->SetStart(false);
-//	_start = PathNodeList[cutoffIndex];
-//	_start->SetStart(true);
-//
-//	// initialize and update collision prediction
-//	tuple<Node*, MobileObstacle*> result = FindCollisionPoint(currentTime);
-//	Node* centrePoint = get<0>(result);
-//	MobileObstacle* collider = get<1>(result);
-//
-//	if (centrePoint != nullptr && collider != nullptr) {
-//		// project this collider on to the centre point
-//		MobileObstacle projection = MobileObstacle(0, 0, 0, centrePoint->X, centrePoint->Y, collider->Radius/* + 0.5/GetResolution()*/); // +1 node to the radius
-//		cout << projection.X << ", " << projection.Y << endl;
-//		vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 0);
-//
-//		cout << newProjectionArea.size() << endl;
-//		for (int i = 0; i < newProjectionArea.size(); i++) {
-//			Node* node = newProjectionArea[i];
-//			node->IsOccupationPredicted = true; // node->SetOccupied(true);
-//			collider->ProjectionArea.push_back(node);
-//		}
-//		return true; // this causes the path to be recalculated immediately
-//	}
-//	return false;
-//}
-
 // the purpose of this method is to simulate future collision points
 // on the current path and return the point of collision
 tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float currentTime, MobileObstacle* obst) {
@@ -445,8 +382,6 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float current
 		float time = totalDist / speed; // distance is in cm but dx and dy are also cm/s
 		//cout << "predict time: " << time << endl;
 
-		//for (int j = 0; j < _obstacleList.size(); j++) {
-		//	MobileObstacle* obj = _obstacleList[j];
 		MobileObstacle projection = obst->SimulateMove(time);
 		vector<Node*> newArea = CalcNewObjectArea(projection, 0);
 
@@ -455,6 +390,9 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float current
 			Node* node = newArea[k];
 			if (node == previous) { // collision detected
 				//cout << "Obstacle " << obj->Id << " has projection expiry t=" << currentTime + time << endl;
+				// we should set a max expiry time limit because future predictions are inaccurate
+				// while the projections are absolute law.
+				if (time > 2) time = 2; // hard cap to be no more than 5 sec in future
 				obst->SetExpiryTime(currentTime + time + 1.0f); // linger for additional 1.0 second
 
 				//cout << "predicted path node index: " << i << endl;
@@ -464,7 +402,6 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float current
 				return tuple<Node*, MobileObstacle*>(projectionCentre, obst); // only find the first collision point
 			}
 		}
-		//}
 	}
 
 	return tuple<Node*, MobileObstacle*>(nullptr, nullptr);
@@ -475,10 +412,13 @@ float TreadmillMap::CalcDist(float x1, float x2, float y1, float y2) {
 }
 
 float TreadmillMap::CalcGradientObsHeight(float distance, float radius, float padding) {
-	if (distance <= radius) return FLT_MAX;
+	if (distance <= radius) return 10000;//FLT_MAX;
 	if (distance < radius + padding) {
+		float heightPenaltyFactor = 100;
 		float gradient = MAP_WIDTH_CM / (distance - radius) - MAP_WIDTH_CM / (padding);
-		return gradient * 3; // 3 is a magic number = increases the gradient
+		//if (gradient < 10000)
+			//cout << "GD penalty: dist = "  << distance << ", val: " << gradient*heightPenaltyFactor << endl;
+		return gradient * heightPenaltyFactor; // heightPenaltyFactor increases the gradient
 	}
 	return 0.0f;
 }

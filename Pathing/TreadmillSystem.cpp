@@ -55,6 +55,9 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 {
 	float nextX = map->GetThisCar()->X;
 	float nextY = map->GetThisCar()->Y;
+//	cout << "Prev X " << nextX << " \r\n";
+//	cout << "Prev Y " << nextY << " \r\n";
+
 	map->SetStart(nextX, nextY);
 	// use a combination of A* and Gradient to output the next waypoint
 
@@ -77,7 +80,8 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 	// Due to the (lack of) sensitivity of the car controller, if a given waypoint is
 	// too near the current car location, the car simply does not move. Therefore
 	// we should pass a waypoint that is 2 nodes distance away.
-	if (aStarSuccess && map->PathNodeList.size() > 3) {
+	int minAStarPathSize = 7; // HARD CODED MAGIC NUMBER 7 = limit at which gradient descent triggers
+	if (aStarSuccess && map->PathNodeList.size() >= minAStarPathSize) {
 		nextX = map->PathNodeList[2]->X;
 		nextY = map->PathNodeList[2]->Y;
 		cout << "A* has found a path." << endl;
@@ -87,25 +91,47 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 
 		cout << "A* found no path, switching to gradient descent." << endl;
 		// TODO: try gradient descent here
+		map->ClearPath();
+		map->UpdateMobileObstacles(deltaTime, timeSnapshot); // gotta do this again
+		GradientDescent::FindPath(map);
 
-
-		cout << "Prev path has size " << map->PathNodeList.size() << endl;
-		if (map->PathNodeList.size() > 2) {
+		if (map->PathNodeList.size() > 1) {
+			cout << "Grad Desc has found a path \r\n";
 			nextX = map->PathNodeList[1]->X;
 			nextY = map->PathNodeList[1]->Y;
+			/*cout << "Grad Desc X " << nextX << " \r\n";
+			cout << "Grad Desc Y " << nextY << " \r\n";*/
 		}
-		//map->ClearPath();
-		//map->ClearProjection();
-		/*// try again with GradientDescent
-		// WIP
-		GradientDescent::FindPath(map);
-		if (map->PathNodeList.size() > 1) {
-			nextX = map->PathNodeList[0]->X;
-			nextY = map->PathNodeList[0]->Y;
-		}*/
 	}
 
 	return pair<float, float>(nextX, nextY);
+}
+
+void TreadmillSystem::UpdateOtherCar(int id, float x, float y, float timeout)
+{
+	float carRadius = 15; // 15 cm buffer
+	deque<MobileObstacle*> existingObstacles = map->GetObstacleList();
+	bool foundCar = false;
+	for (int i = 0; i < existingObstacles.size(); i++) {
+		if (existingObstacles[i]->Id == id) {
+			foundCar = true;
+			existingObstacles[i]->X = x;
+			existingObstacles[i]->Y = y;
+			existingObstacles[i]->dX = 0;
+			existingObstacles[i]->dY = 0;
+			existingObstacles[i]->Radius = carRadius; // hard coded car radius
+		}
+	}
+
+	// otherwise add this new other car
+	if (!foundCar) {
+		printf("other car ID: %d\n", id);
+		MobileObstacle* additionalObstacle = new MobileObstacle(id, x, y, 0, 0, carRadius);
+		additionalObstacle->IsCar = true;
+		additionalObstacle->SetExpiryTime(timeout);
+		map->AddObstacle(additionalObstacle);
+	}
+	existingObstacles = map->GetObstacleList();
 }
 
 void TreadmillSystem::UpdateObstacle(int id, float x, float y, float dx, float dy, float radius)
@@ -137,16 +163,34 @@ void TreadmillSystem::RemoveObstaclesExcept(vector<int> idList)
 	
 	// create a new deque and replace the old one with the new one
 	deque<MobileObstacle*> newObstacleSet;
+	deque<MobileObstacle*> deleteObstacleSet;
 
 	for (int i = 0; i < existingObstacles.size(); i++) {
 
 		// check for ID match and then populate the new collection
-		for (int j = 0; j < idList.size(); j++) {
-			if (existingObstacles[i]->Id == idList[j]) {
-				newObstacleSet.push_back(existingObstacles[i]);
-				break;
+		bool hasMatch = false;
+		if (existingObstacles[i]->IsCar) {
+			hasMatch = true;
+			newObstacleSet.push_back(existingObstacles[i]);
+			
+		} else {
+			for (int j = 0; j < idList.size(); j++) {
+				if (existingObstacles[i]->Id == idList[j]) {
+					hasMatch = true;
+					newObstacleSet.push_back(existingObstacles[i]);
+					break;
+				}
 			}
 		}
+		
+		if (!hasMatch) {
+			deleteObstacleSet.push_back(existingObstacles[i]);
+		}
+	}
+	
+	// we should manually clear the projections for the obstacles that we delete here
+	for (int i = 0; i < deleteObstacleSet.size(); i++) {
+		deleteObstacleSet[i]->ClearProjection();
 	}
 
 	map->ReplaceObstacleList(newObstacleSet);

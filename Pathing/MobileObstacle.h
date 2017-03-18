@@ -14,6 +14,7 @@ public:
 	deque<Node*> ActualArea;
 	deque<Node*> ProjectionArea;
 	float ExpiryTime;
+	bool IsCar;
 
 	MobileObstacle();
 	MobileObstacle(int id, float x, float y, float dx, float dy, float radius);

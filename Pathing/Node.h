@@ -1,7 +1,7 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <vector>
+#include <deque>
 #include <unordered_set>
 #define nullptr 0
 
@@ -16,6 +16,7 @@ private:
 	bool _isStart;
 	bool _isGoal;
 	float _heuristicDist;
+	float _heuristicToGoal;
 	Node* _north;
 	Node* _east;
 	Node* _south;
@@ -40,6 +41,7 @@ public:
 	float X;
 	float Y;
 	float GetHeuristicDist();
+	float GetHeuristicToGoal();
 	Node* GetNorth();
 	Node* GetEast();
 	Node* GetSouth();
@@ -48,7 +50,7 @@ public:
 	Node* GetNorthWest();
 	Node* GetSouthEast();
 	Node* GetSouthWest();
-	vector<Node*> GetAllAdjacent();
+	deque<Node*> GetAllAdjacent();
 	unordered_set<Node*> GetDiagonals();
 	char Print();
 	
@@ -60,6 +62,7 @@ public:
 	void SetStart(bool isStart);
 	void SetGoal(bool isGoal);
 	void SetHeuristic(float dist);
+	void SetHeuristicToGoal(float dist);
 	void SetNorth(Node* north);
 	void SetEast(Node* east);
 	void SetSouth(Node* south);

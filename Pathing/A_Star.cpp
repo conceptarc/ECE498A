@@ -64,7 +64,7 @@ bool A_Star::FindPath(TreadmillMap* map2d) {
 		}
 
 		// note that paths contain the final node too
-		vector<Node*> adjacent = current->GetAllAdjacent();
+		deque<Node*> adjacent = current->GetAllAdjacent();
 		for (int i = 0; i < adjacent.size(); i++) {
 			Node* node = adjacent[i];
 			if (node == nullptr || closedList.count(node) != 0) continue;

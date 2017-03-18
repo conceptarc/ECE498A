@@ -9,6 +9,7 @@ Node::Node() {
 	_isStart = false;
 	_isGoal = false;
 	_heuristicDist = 0;
+	_heuristicToGoal = 0;
 	_north = NULL;
 	_east = NULL;
 	_south = NULL;
@@ -55,6 +56,11 @@ float Node::GetHeuristicDist() {
 	return _heuristicDist;
 }
 
+float Node::GetHeuristicToGoal()
+{
+	return _heuristicToGoal;
+}
+
 Node* Node::GetNorth() {
 	return _north;
 }
@@ -87,8 +93,8 @@ Node* Node::GetSouthWest() {
 	return _southWest;
 }
 
-vector<Node*> Node::GetAllAdjacent() {
-	vector<Node*> children;
+deque<Node*> Node::GetAllAdjacent() {
+	deque<Node*> children;
 	if (_north != nullptr) children.push_back(_north);
 	if (_east != nullptr) children.push_back(_east);
 	if (_south != nullptr) children.push_back(_south);
@@ -146,6 +152,11 @@ void Node::SetGoal(bool isGoal) {
 
 void Node::SetHeuristic(float dist) {
 	_heuristicDist = dist;
+}
+
+void Node::SetHeuristicToGoal(float dist)
+{
+	_heuristicToGoal = dist;
 }
 
 void Node::SetNorth(Node* north) {

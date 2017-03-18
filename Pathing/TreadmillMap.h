@@ -41,7 +41,7 @@ private:
 	float CalcDist(float x1, float x2, float y1, float y2);
 	float CalcGradientObsHeight(float distance, float radius, float padding);
 	Node* CalcNodeFromCoordinate(float x, float y);
-	vector<Node*> CalcNewObjectArea(MobileObstacle obj, float paddingCm);
+	deque<Node*> CalcNewObjectArea(MobileObstacle obj, float paddingCm);
 
 public:
 	// new constructor for a custom map size that fits the treadmill
@@ -76,4 +76,5 @@ public:
 	void ClearPath();
 	//bool UpdateCurrentLocation(float deltaTime, float currentTime); // update the start location, returns true if collision detected
 	tuple<Node*, MobileObstacle*> FindNextCollisionPoint(float currentTime, MobileObstacle* obstacle);
+	void ProjectAllObstaclesForGD(float deltaTime, float currentTime); // used for gradient descent
 };

@@ -13,6 +13,7 @@ public:
 	float dY; // velocity Y component
 	deque<Node*> ActualArea;
 	deque<Node*> ProjectionArea;
+	deque<Node*> GradientArea;
 	float ExpiryTime;
 	bool IsCar;
 

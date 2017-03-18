@@ -3,7 +3,10 @@
 #include <iostream>
 
 MobileObstacle::MobileObstacle() : Obstacle(0, 0, 0, 0) {
+	ExpiryTime = -1;
 	IsCar = false;
+	dX = 0;
+	dY = 0;
 	// current deque is blank
 }
 
@@ -53,6 +56,15 @@ void MobileObstacle::ClearProjection()
 		ProjectionArea[j]->IsOccupationPredicted = false;
 	}
 	ProjectionArea.clear();
+	
+	// do similar protocol for gradient area
+	// reset the heuristics that were modified by gradient descent
+	if (GradientArea.size() > 0)
+		cout << "Clearing gradient area sized: " << GradientArea.size() << endl;
+	for (int j = 0; j < GradientArea.size(); j++) {
+		GradientArea[j]->SetHeuristic(GradientArea[j]->GetHeuristicToGoal());
+	}
+	GradientArea.clear();
 }
 
 MobileObstacle MobileObstacle::SimulateMove(float deltaTime) {

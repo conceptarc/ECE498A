@@ -18,7 +18,7 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor) : _res
 	START_Y = 0.0f; // use void SetStart(float x, float y);	void SetGoal(float x, float y); to set these later
 	GOAL_X = 0.0f;
 	GOAL_Y = 0.0f;
-	PADDING = 5; // n cm away from radius of obstacle
+	PADDING = 3; // n cm away from radius of obstacle
 
 
 	// init _thisCar
@@ -74,6 +74,12 @@ TreadmillMap::TreadmillMap(int width, int length, float resolutionFactor) : _res
 }
 
 TreadmillMap::~TreadmillMap() {
+	// clear obstacles before deleting the map
+	for (int i = 0; i < _obstacleList.size(); i++) {
+		delete _obstacleList[i];
+	}
+	_obstacleList.clear();
+
 	for (int i = 0; i < MAP_LENGTH_NODES; i++) {
 		for (int j = 0; j < MAP_WIDTH_NODES; j++) {
 			delete map2d[i][j];
@@ -82,10 +88,6 @@ TreadmillMap::~TreadmillMap() {
 	}
 	delete[] map2d;
 	delete _thisCar;
-	for (int i = 0; i < _obstacleList.size(); i++) {
-		delete _obstacleList[i];
-	}
-	_obstacleList.clear();
 }
 
 int TreadmillMap::GetMapWidthCm() {
@@ -201,6 +203,7 @@ void TreadmillMap::SetGoal(float x, float y) {
 			float distToGoal = CalcDist(x, GOAL_X, y, GOAL_Y);
 
 			node->SetHeuristic(distToGoal); // calculated above, might as well use it
+			node->SetHeuristicToGoal(distToGoal); // calculated above, might as well use it
 		}
 	}
 }
@@ -213,6 +216,7 @@ MobileObstacle * const TreadmillMap::GetThisCar()
 float TreadmillMap::CalcHeuristic(Node* node) {
 	float h = CalcDist(node->X, _goal->X, node->Y, _goal->Y);
 	node->SetHeuristic(h);
+	node->SetHeuristicToGoal(h);
 	//if (node->IsOccupationPredicted) return h + _projectionHeight;
 	return h;
 }
@@ -244,8 +248,8 @@ void TreadmillMap::Print() {
 	}
 }
 
-vector<Node*> TreadmillMap::CalcNewObjectArea(MobileObstacle obj, float paddingCm) {
-	vector<Node*> result;
+deque<Node*> TreadmillMap::CalcNewObjectArea(MobileObstacle obj, float paddingCm) {
+	deque<Node*> result;
 
 	// perform BFS on the nearby area starting at the centre node
 	unordered_set<int> newNodeArea; // closed list of the search
@@ -257,10 +261,10 @@ vector<Node*> TreadmillMap::CalcNewObjectArea(MobileObstacle obj, float paddingC
 	while (openList.size() > 0) {
 		Node* current = openList[0];
 		openList.pop_front();
-		vector<Node*> neighbours = current->GetAllAdjacent();
+		deque<Node*> neighbours = current->GetAllAdjacent();
 		for (int i = 0; i < neighbours.size(); i++) {
 			Node* node = neighbours[i];
-			if (node == nullptr) continue;
+			if (node == nullptr || node == NULL) continue;
 
 			if (CalcDist(node->X, obj.X, node->Y, obj.Y) < obj.Radius + paddingCm) {
 				if (newNodeArea.count(node->GetID()) == 0) {
@@ -276,45 +280,28 @@ vector<Node*> TreadmillMap::CalcNewObjectArea(MobileObstacle obj, float paddingC
 }
 
 void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
-	// does not work for gradient descent! // yet
 
 	deque<MobileObstacle*> outOfBoundsList;
 
 	// simulate/project obstacle locations
 	for (int i = 0; i < _obstacleList.size(); i++) {
 		MobileObstacle* obj = _obstacleList[i];
-		float gradientRadiusInfluencePadding = 25; // 25 cm
 
-		// before moving
-		vector<Node*> oldAreaPlusBuffer = CalcNewObjectArea(*obj, PADDING + gradientRadiusInfluencePadding); // also contains nodes surrounding the obstacle
-		for (int j = 0; j < oldAreaPlusBuffer.size(); j++) {
-			CalcHeuristic(oldAreaPlusBuffer[j]); // assign this default value
-		}
 		for (int j = 0; j < obj->ActualArea.size(); j++) {
-			obj->ActualArea[j]->IsObjectPresent = false; // node->SetOccupied(false);
+			obj->ActualArea[j]->IsObjectPresent = false;
 		}
 		obj->ActualArea.clear();
 
 		// move the object
 		obj->Move(deltaTime, currentTime);
 		// cout << "deltaT: " << deltaTime << endl;
-		vector<Node*> newArea = CalcNewObjectArea(*obj, PADDING + gradientRadiusInfluencePadding); // also contains nodes surrounding the obstacle
+		deque<Node*> newArea = CalcNewObjectArea(*obj, PADDING);
 
 		// apply changes to the map
-		// add additional heuristic penalty to object surroundings
 		for (int j = 0; j < newArea.size(); j++) {
 			Node* node = newArea[j];
-
-			float distanceFromObstacle = CalcDist(node->X, obj->X, node->Y, obj->Y);
-			// #gradientdescent
-			float gradientPenalty = CalcGradientObsHeight(distanceFromObstacle, obj->Radius, PADDING + gradientRadiusInfluencePadding);
-
-			node->SetHeuristic(node->GetHeuristicDist() + gradientPenalty);
-
-			if (distanceFromObstacle <= obj->Radius) {
-				node->IsObjectPresent = true; // node->SetOccupied(true);
-				obj->ActualArea.push_back(node);
-			}
+			node->IsObjectPresent = true;
+			obj->ActualArea.push_back(node);
 		}
 		if (newArea.size() == 0)
 			outOfBoundsList.push_back(obj); // mark for deletion
@@ -325,14 +312,19 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 		MobileObstacle* obj = outOfBoundsList[i];
 		cout << "cleared projection due to obstacle leaving map" << endl;
 		obj->ClearProjection();
-
+		
+		int idFound = -1;
+		
 		for (int j = 0; j < _obstacleList.size(); j++) {
 			if (_obstacleList[j]->Id == obj->Id) {
-				delete _obstacleList[j];
-				_obstacleList.erase(_obstacleList.begin() + j);
-
+				idFound = j;
 				break;
 			}
+		}
+		
+		if (idFound != -1) {
+			delete _obstacleList[idFound];
+			_obstacleList.erase(_obstacleList.begin() + idFound);
 		}
 	}
 
@@ -346,7 +338,7 @@ void TreadmillMap::UpdateMobileObstacles(float deltaTime, float currentTime) {
 			// project this collider on to the centre point
 			MobileObstacle projection = MobileObstacle(0, centrePoint->X, centrePoint->Y, 0, 0, collider->Radius);
 			// pad by 5 cm
-			vector<Node*> newProjectionArea = CalcNewObjectArea(projection, 3);
+			deque<Node*> newProjectionArea = CalcNewObjectArea(projection, 3);
 
 			//cout << newProjectionArea.size() << endl;
 			for (int i = 0; i < newProjectionArea.size(); i++) {
@@ -383,7 +375,7 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float current
 		//cout << "predict time: " << time << endl;
 
 		MobileObstacle projection = obst->SimulateMove(time);
-		vector<Node*> newArea = CalcNewObjectArea(projection, 0);
+		deque<Node*> newArea = CalcNewObjectArea(projection, 0);
 
 		// check if any of the projected area overlaps with the car path
 		for (int k = 0; k < newArea.size(); k++) {
@@ -393,7 +385,7 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float current
 				// we should set a max expiry time limit because future predictions are inaccurate
 				// while the projections are absolute law.
 				if (time > 2) time = 2; // hard cap to be no more than 5 sec in future
-				obst->SetExpiryTime(currentTime + time + 1.0f); // linger for additional 1.0 second
+				obst->SetExpiryTime(currentTime + time + 0.0f); // linger for additional N seconds
 
 				//cout << "predicted path node index: " << i << endl;
 				//cout << "predicted collision coord: " << projection.X << ", " << projection.Y << endl;
@@ -407,12 +399,45 @@ tuple<Node*, MobileObstacle*> TreadmillMap::FindNextCollisionPoint(float current
 	return tuple<Node*, MobileObstacle*>(nullptr, nullptr);
 }
 
+void TreadmillMap::ProjectAllObstaclesForGD(float deltaTime, float currentTime)
+{
+	float gradientRadiusInfluencePadding = 30; // N cm
+
+	// clear the projections and arbitrarily project it at a certain time in the future
+	for (int i = 0; i < _obstacleList.size(); i++) {
+		MobileObstacle* obst = _obstacleList[i];
+		obst->ClearProjection(); // this now clears the gradient heuristics
+
+		MobileObstacle projection = obst->SimulateMove(deltaTime);
+		deque<Node*> newArea = CalcNewObjectArea(projection, PADDING + gradientRadiusInfluencePadding); // also contains nodes surrounding the obstacle
+		
+		if (newArea.size() > 0) {
+			// insert the new projection
+			for (int j = 0; j < newArea.size(); j++) {
+				Node* node = newArea[j];
+				float distanceFromCentre = CalcDist(node->X, projection.X, node->Y, projection.Y);
+				float gradientPenalty = CalcGradientObsHeight(distanceFromCentre, projection.Radius, PADDING + gradientRadiusInfluencePadding);
+
+				node->SetHeuristic(node->GetHeuristicToGoal() + gradientPenalty);
+
+				obst->GradientArea.push_back(node);
+				if (distanceFromCentre <= projection.Radius + PADDING) {
+					node->IsOccupationPredicted = true;
+					obst->ProjectionArea.push_back(node);
+				}
+			}
+
+			obst->SetExpiryTime(currentTime + deltaTime*0.5f);
+		}
+	}
+}
+
 float TreadmillMap::CalcDist(float x1, float x2, float y1, float y2) {
 	return sqrtf(powf(x1 - x2, 2) + powf(y1 - y2, 2));
 }
 
 float TreadmillMap::CalcGradientObsHeight(float distance, float radius, float padding) {
-	if (distance <= radius) return 10000;//FLT_MAX;
+	/*if (distance <= radius) return 10000;//FLT_MAX;
 	if (distance < radius + padding) {
 		float heightPenaltyFactor = 100;
 		float gradient = MAP_WIDTH_CM / (distance - radius) - MAP_WIDTH_CM / (padding);
@@ -420,7 +445,15 @@ float TreadmillMap::CalcGradientObsHeight(float distance, float radius, float pa
 			//cout << "GD penalty: dist = "  << distance << ", val: " << gradient*heightPenaltyFactor << endl;
 		return gradient * heightPenaltyFactor; // heightPenaltyFactor increases the gradient
 	}
-	return 0.0f;
+	return 0.0f;*/
+
+	// new gradient function: no plateau in centre
+
+	float heightPenaltyFactor = 20;
+	float gradient = MAP_WIDTH_CM / (distance) - MAP_WIDTH_CM / (radius + padding);
+	//if (gradient < 10000)
+	//cout << "GD penalty: dist = "  << distance << ", val: " << gradient*heightPenaltyFactor << endl;
+	return gradient * heightPenaltyFactor; // heightPenaltyFactor increases the gradient
 }
 
 Node* TreadmillMap::CalcNodeFromCoordinate(float x, float y) {

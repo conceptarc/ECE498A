@@ -35,7 +35,7 @@ void GradientDescent::FindPath(TreadmillMap* map) {
 	}
 }
 
-Node* GradientDescent::NextNode(vector<Node*> neighbours) {
+Node* GradientDescent::NextNode(deque<Node*> neighbours) {
 	float cost = FLT_MAX;
 	Node* selection = nullptr;
 	for (int i = 0; i < neighbours.size(); i++) {

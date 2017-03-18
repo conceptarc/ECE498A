@@ -82,25 +82,35 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 	// we should pass a waypoint that is 2 nodes distance away.
 	int minAStarPathSize = 7; // HARD CODED MAGIC NUMBER 7 = limit at which gradient descent triggers
 	if (aStarSuccess && map->PathNodeList.size() >= minAStarPathSize) {
-		nextX = map->PathNodeList[2]->X;
-		nextY = map->PathNodeList[2]->Y;
+		nextX = map->PathNodeList[3]->X;
+		nextY = map->PathNodeList[3]->Y;
 		cout << "A* has found a path." << endl;
 	} else {
 		// else the path is too short
 		// A* is not reliable in avoiding future collisions when the car is already near the destination
 
 		cout << "A* found no path, switching to gradient descent." << endl;
-		// TODO: try gradient descent here
+		// time for GD
 		map->ClearPath();
-		map->UpdateMobileObstacles(deltaTime, timeSnapshot); // gotta do this again
+		map->ClearProjection();
+		//map->UpdateMobileObstacles(deltaTime, timeSnapshot); // gotta do this again
+
+		float gradientFuturePrediction = 40; // should be seconds but really is not for some reason
+		map->ProjectAllObstaclesForGD(gradientFuturePrediction, timeSnapshot);
 		GradientDescent::FindPath(map);
 
-		if (map->PathNodeList.size() > 1) {
+		if (map->PathNodeList.size() > 2) {
+			cout << "Grad Desc has found a path \r\n";
+			nextX = map->PathNodeList[2]->X;
+			nextY = map->PathNodeList[2]->Y;
+		} else if (map->PathNodeList.size() > 1) {
 			cout << "Grad Desc has found a path \r\n";
 			nextX = map->PathNodeList[1]->X;
 			nextY = map->PathNodeList[1]->Y;
-			/*cout << "Grad Desc X " << nextX << " \r\n";
-			cout << "Grad Desc Y " << nextY << " \r\n";*/
+		} else if (map->PathNodeList.size() > 0) {
+			cout << "Grad Desc has found a path \r\n";
+			nextX = map->PathNodeList[0]->X;
+			nextY = map->PathNodeList[0]->Y;
 		}
 	}
 
@@ -109,7 +119,7 @@ pair<float, float> TreadmillSystem::GetNextWaypoint()
 
 void TreadmillSystem::UpdateOtherCar(int id, float x, float y, float timeout)
 {
-	float carRadius = 15; // 15 cm buffer
+	float carRadius = 10; // N cm buffer
 	deque<MobileObstacle*> existingObstacles = map->GetObstacleList();
 	bool foundCar = false;
 	for (int i = 0; i < existingObstacles.size(); i++) {

@@ -15,7 +15,7 @@ using namespace std;
 
 class GradientDescent {
 private:
-	static Node* NextNode(vector<Node*> neighbours);
+	static Node* NextNode(deque<Node*> neighbours);
 public:
 	static void FindPath(TreadmillMap* map);
 };
